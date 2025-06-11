@@ -27,7 +27,7 @@ Durante uma consulta médica, muitos detalhes importantes são discutidos — no
 
 - **Frontend (Mobile):** React Native ou Flutter *(a definir)*
 - **Backend/API:** Node.js com Express ou FastAPI
-- **Transcrição e NLP:** OpenAI Whisper + OpenAI GPT API
+- **Transcrição e NLP:** OpenAI Whisper/common voice corpus 21.0 + OpenAI GPT API
 - **Banco de Dados:** PostgreSQL ou MongoDB
 - **Web App (Admin):** React.js
 
