@@ -39,7 +39,7 @@ def selecionar_entrada(transcricoes):
         print("\nNenhuma transcrição encontrada para esse paciente.")
         return None
 
-    if len(cand) > 1:
+    if len(cand) >= 1:
         datas = sorted({t["data"] for t in cand})
         print("\nSelecione a data:")
         for i,d in enumerate(datas,1): 
@@ -48,7 +48,7 @@ def selecionar_entrada(transcricoes):
         sel_data = datas[escolha]
         cand = [t for t in cand if t["data"] == sel_data]
 
-    if len(cand) > 1:
+    if len(cand) >= 1:
         horarios = sorted({t["horario"] for t in cand})
         print("\nSelecione o horário:")
         for i,h in enumerate(horarios,1): 
@@ -63,7 +63,7 @@ def gerar_resumo(texto):
     prompt = (
         "Você é um assistente que faz resumos clínicos.\n"
         "A seguir está a transcrição de uma consulta médica.\n"
-        "Faça um resumo curto com os principais pontos discutidos, "
+        "Faça um resumo com os principais pontos discutidos, "
         "destacando medicamentos, sintomas, prescrições ou alertas importantes.\n\n"
         f"---\n{texto}\n---\n\nResumo:"
     )
@@ -71,7 +71,7 @@ def gerar_resumo(texto):
         model="gpt-4.1-mini",
         messages=[{"role":"user","content": prompt}],
         temperature=0.3,
-        max_tokens=300
+        max_tokens=30000
     )
     return resp.choices[0].message.content.strip()
 

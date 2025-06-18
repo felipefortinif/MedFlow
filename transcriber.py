@@ -24,7 +24,6 @@ def main():
     output_file = "transcricoes.txt"
     with open(output_file, "a", encoding="utf-8") as f:
         f.write(f"Paciente: {paciente} | Data: {data} | Horário: {horario}\n")
-        f.write("\n\n")
         f.write(wrapped_text + "\n")
         f.write("\n\n")
 
