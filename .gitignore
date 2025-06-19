@@ -2,3 +2,4 @@ venv
 audios
 __pycache__
 .vscode
+node_modules
