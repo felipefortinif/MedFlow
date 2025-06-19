@@ -16,7 +16,7 @@ def main():
     horario    = input("Horário da consulta (HH:MM): ").strip()
 
     print("\n⏳ Transcrevendo… pode levar alguns segundos.")
-    result = model.transcribe("audios/" + audio_path)
+    result = model.transcribe(audio_path)
     texto = result["text"].strip()
 
 

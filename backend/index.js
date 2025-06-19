@@ -4,7 +4,6 @@ const cors      = require('cors');
 const multer    = require('multer');
 const Queue     = require('bull');
 const path      = require('path');
-const { spawn } = require('child_process');
 
 const app = express();
 app.use(cors());
@@ -20,29 +19,52 @@ const transQueue = new Queue('transcriptions', {
 
 // POST /consulta ➔ cria job e retorna jobId
 app.post('/consulta', upload.single('audio'), async (req, res) => {
+  console.log('Received POST /consulta');
   const audioPath = req.file.path;
   const { paciente, data, horario } = req.body;
-  const job = await transQueue.add({ audioPath, paciente, data, horario });
-  res.status(202).json({ jobId: job.id });
+  console.log(`Enqueue job: patient=${paciente}, date=${data}, time=${horario}, audioPath=${audioPath}`);
+
+  try {
+    const job = await transQueue.add({ audioPath, paciente, data, horario });
+    console.log(`Job queued with id=${job.id}`);
+    res.status(202).json({ jobId: job.id });
+  } catch (err) {
+    console.error('Failed to enqueue job:', err);
+    res.status(500).json({ error: 'Failed to enqueue job' });
+  }
 });
 
 // GET /consulta/:id ➔ informa status ou resultado
 app.get('/consulta/:id', async (req, res) => {
-  const job = await transQueue.getJob(req.params.id);
-  if (!job) return res.status(404).json({ error: 'Job não encontrado' });
+  const jobId = req.params.id;
+  console.log(`Received GET /consulta/${jobId}`);
+
+  const job = await transQueue.getJob(jobId);
+  if (!job) {
+    console.warn(`Job not found: id=${jobId}`);
+    return res.status(404).json({ error: 'Job não encontrado' });
+  }
 
   const state = await job.getState();
+  console.log(`Job id=${jobId} state=${state}`);
+
   if (state === 'completed') {
     const { resumo, log } = job.returnvalue;
+    console.log(`Job id=${jobId} completed`);
     return res.json({ status: state, resumo, log });
   }
 
   if (state === 'failed') {
+    console.error(`Job id=${jobId} failed: ${job.failedReason}`);
     return res.json({ status: state, reason: job.failedReason });
   }
 
+  // pending or active
   res.json({ status: state });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+// optional: adjust server timeouts if needed
+server.setTimeout(10 * 60 * 1000);      // 10 min
+server.keepAliveTimeout = 65 * 1000;
