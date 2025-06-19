@@ -42,8 +42,8 @@ Em breve.
 ## 📅 Roadmap Inicial
 
 - [x] Definição da ideia central
+- [x] Integração com a API da OpenAI
 - [ ] Protótipo da interface mobile
-- [ ] Integração com a API da OpenAI
 - [ ] Sistema de autenticação de médicos
 - [ ] Web app para visualização dos pacientes
 
