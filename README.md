@@ -1,4 +1,4 @@
-# MedNotes - Transcrição Inteligente para Consultórios Médicos 
+# MedNotes - Transcrição Inteligente para Consultórios Médicos  
 
 MedNotes é uma aplicação voltada para médicos que desejam simplificar o processo de registro de informações clínicas. A proposta é permitir que o profissional grave a consulta diretamente pelo celular, com transcrição automática da conversa e geração de observações clínicas relevantes sobre o paciente.
 
