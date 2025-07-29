@@ -25,11 +25,10 @@ Durante uma consulta médica, muitos detalhes importantes são discutidos — no
 
 ## 🧰 Tecnologias
 
-- **Frontend (Mobile):** React Native ou Flutter *(a definir)*
-- **Backend/API:** Node.js com Express ou FastAPI
+- **Frontend:** Angular
+- **Backend/API:** Django
 - **Transcrição e NLP:** OpenAI Whisper/common voice corpus 21.0 + OpenAI GPT API
-- **Banco de Dados:** PostgreSQL ou MongoDB
-- **Web App (Admin):** React.js
+- **Banco de Dados:** PostgreSQL
 
 ## 🔐 Privacidade e Segurança
 
