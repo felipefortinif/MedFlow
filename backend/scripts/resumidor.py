@@ -78,7 +78,7 @@ prompt = (
     "Transcrição da consulta:\n\n"
     f"{texto}\n\n"
     "O prontuário gerado deve conter os seguintes topicos respectivamente: Nome; Indicação(medico que indicou); Queixa principal; História da moléstia atual; Neuro-psíquico; Sistema locomotor; Estado geral de saúde; Doenças adulto; Outras doenças; Medicações em uso; Hospitalizações, acidentes, traumatismos e cirurgias; Alergias; Imunizações; Historia ocupacional e familiar; Outras drogas; Estilo de vida; Exercicio fisico; Frequência do exercicio; Queixas da vida sexual, sono, intestino"
-    "Os topicos que não possam ser completos atravez da transcrição devem aparecer como Não informado"
+    "Os topicos que não podem ser completos atravez da transcrição devem aparecer como Não informado"
     "Todas as informações devem ser tiradas da transcrição da consulta, não invente nenhuma informação"
     "O prontuário deve ser escrito em markdown"
 )
