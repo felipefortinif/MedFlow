@@ -3,3 +3,4 @@ audios
 __pycache__
 .vscode
 node_modules
+audio_recordings/

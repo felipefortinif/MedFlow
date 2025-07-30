@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Recorder</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        #recordBtn, #stopBtn { font-size: 1.2em; margin: 10px; }
+        #status { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Record Audio</h1>
+    <button id="recordBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <div id="status"></div>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+
+        recordBtn.onclick = async () => {
+            audioChunks = [];
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            statusDiv.textContent = 'Recording...';
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            statusDiv.textContent = 'Processing...';
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+                const response = await fetch('/audio/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    statusDiv.textContent = 'Audio uploaded successfully!';
+                } else {
+                    statusDiv.textContent = 'Upload failed.';
+                }
+            };
+        };
+    </script>
+
+    <h2>Previous Recordings</h2>
+    <ul>
+        {% for rec in recordings %}
+            <li>
+                <audio controls src="{{ rec.audio_file.url }}"></audio>
+                <small>Uploaded at: {{ rec.uploaded_at }}</small>
+            </li>
+        {% empty %}
+            <li>No recordings yet.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html> 
