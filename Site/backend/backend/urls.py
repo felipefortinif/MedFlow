@@ -24,4 +24,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("main.urls")),
     path("audio/", include("audio_rec.urls")),
+    path("transcriber/", include("transcriber.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

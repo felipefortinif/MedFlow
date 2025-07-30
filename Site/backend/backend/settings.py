@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "audio_rec.apps.AudioRecConfig",
     "main.apps.MainConfig",
+    "transcriber.apps.TranscriberConfig",
 ]
 
 MIDDLEWARE = [

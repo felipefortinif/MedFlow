@@ -14,6 +14,7 @@
     <button id="recordBtn">Start Recording</button>
     <button id="stopBtn" disabled>Stop Recording</button>
     <div id="status"></div>
+    <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
     <script>
         let mediaRecorder;
         let audioChunks = [];
@@ -60,10 +61,52 @@
             <li>
                 <audio controls src="{{ rec.audio_file.url }}"></audio>
                 <small>Uploaded at: {{ rec.uploaded_at }}</small>
+                <button class="transcribe-btn" data-audio-id="{{ rec.id }}">Transcribe</button>
+                <span class="transcript-status" id="transcript-status-{{ rec.id }}"></span>
+                <div class="transcript-text" id="transcript-{{ rec.id }}"></div>
             </li>
         {% empty %}
             <li>No recordings yet.</li>
         {% endfor %}
     </ul>
+    <script>
+    // CSRF token helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    document.querySelectorAll('.transcribe-btn').forEach(btn => {
+        btn.onclick = async function() {
+            const audioId = this.getAttribute('data-audio-id');
+            const statusSpan = document.getElementById('transcript-status-' + audioId);
+            const transcriptDiv = document.getElementById('transcript-' + audioId);
+            statusSpan.textContent = 'Transcribing...';
+            transcriptDiv.textContent = '';
+            try {
+                const response = await fetch(`/transcriber/transcribe/${audioId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                });
+                if (!response.ok) throw new Error('Transcription failed');
+                const data = await response.json();
+                statusSpan.textContent = data.already_exists ? 'Transcript (cached):' : 'Transcript:';
+                transcriptDiv.textContent = data.transcript;
+            } catch (e) {
+                statusSpan.textContent = 'Error: ' + e.message;
+            }
+        };
+    });
+    </script>
 </body>
 </html> 
