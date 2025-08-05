@@ -951,3 +951,34 @@ não. Tira, muda? Ou não? Ah, é melhor. Uhum. Ah, eu não. É... Ah, é melhor
 2
 
 
+
+
+Paciente: Smelvin | Data: 05/08/2025 | Horário: 12:29Vamos ver se essa brincadeira tá bem. boa, eu não sei como vai funcionar isso aqui, se vai.... Descrevendo aos poucos.... Eu acho que vai escrever tudo de uma vez, né?. Mas.... Bom.... Vamos ver.. Vou fazer um teste rapidinho aqui, isso já está suficiente para testar. Vou apertar aqui e aqui e vamos ver no que que dá. 
+
+Paciente: Smelvin | Data: 05/08/2025 | Horário: 12:32
+Vamos lá..
+Fiz algumas..
+Eu fiz alguns concertos..
+alguns ajustes e vamos ver o que vai dar. Eu acho agora vai ficar legal..
+Espero que fique..
+porque eu tenho que dar o commit logo nisso.
+pra....
+eu ir comer....
+tomar um banho, cortar as unhas....
+Me preparar pro surf.
+
+
+Paciente: Smelvin | Data: 05/08/2025 | Horário: 12:34
+tá, último teste
+é... agora eu fiz uma última coisa, só tinha o ponto final ali que tava ficando demais às vezes
+e... bom, vamos vir
+se der tudo certo, eu vou...
+botar pra rodar de novo
+deixar o ar...
+Vamos ver o que dá
+
+
+Paciente: Teste | Data: 05/08/2025 | Horário: 12:41
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 33, 34, 35, 36, 37, 38, 39, 40, 40, 41, 42, 43, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 44, 45, 45, 44, 45, 45, 44, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45
+14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27...
+28, 29, 30, 31
