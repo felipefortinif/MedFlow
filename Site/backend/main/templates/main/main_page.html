@@ -14,31 +14,92 @@
     <button id="recordBtn">Start Recording</button>
     <button id="stopBtn" disabled>Stop Recording</button>
     <div id="status"></div>
+    <div id="live-transcript-container" style="margin-top: 20px; display: none;">
+        <h3>Live Transcript</h3>
+        <div id="live-transcript" style="background: #f4f4f4; padding: 10px; min-height: 40px;"></div>
+    </div>
     <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
     <script>
         let mediaRecorder;
         let audioChunks = [];
+        let liveTranscript = '';
+        let liveTranscriptDiv = null;
+        let liveTranscriptContainer = null;
+        let chunkInterval = null;
+        let stream = null;
+        let ws = null;
         const recordBtn = document.getElementById('recordBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('status');
+        document.addEventListener('DOMContentLoaded', () => {
+            liveTranscriptDiv = document.getElementById('live-transcript');
+            liveTranscriptContainer = document.getElementById('live-transcript-container');
+        });
+
+        function getWebSocketUrl() {
+            let loc = window.location;
+            let wsStart = loc.protocol === 'https:' ? 'wss://' : 'ws://';
+            return wsStart + loc.host + '/ws/transcribe/';
+        }
 
         recordBtn.onclick = async () => {
             audioChunks = [];
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            liveTranscript = '';
+            if (liveTranscriptDiv) liveTranscriptDiv.textContent = '';
+            if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'block';
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            statusDiv.textContent = 'Recording...';
-            recordBtn.disabled = true;
-            stopBtn.disabled = false;
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            ws = new WebSocket(getWebSocketUrl());
+            ws.onopen = () => {
+                statusDiv.textContent = 'Recording...';
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+                mediaRecorder.start(1000); // 1s chunks
+            };
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.text) {
+                        liveTranscript = data.text;
+                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = liveTranscript;
+                    } else if (data.partial) {
+                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = data.partial;
+                    }
+                } catch (e) {
+                    // Not JSON or error
+                }
+            };
+            ws.onerror = (e) => {
+                statusDiv.textContent = 'WebSocket error';
+            };
+            ws.onclose = () => {
+                statusDiv.textContent = 'WebSocket closed';
+            };
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                    e.data.arrayBuffer().then(buf => ws.send(buf));
+                    audioChunks.push(e.data);
+                }
+            };
         };
 
         stopBtn.onclick = () => {
-            mediaRecorder.stop();
+            if (chunkInterval) {
+                clearInterval(chunkInterval);
+                chunkInterval = null;
+            }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.requestData(); // Get last chunk
+                mediaRecorder.stop();
+            }
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
             statusDiv.textContent = 'Processing...';
             recordBtn.disabled = false;
             stopBtn.disabled = true;
             mediaRecorder.onstop = async () => {
+                // Optionally, send all audioChunks as a full file for storage
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
@@ -51,6 +112,8 @@
                 } else {
                     statusDiv.textContent = 'Upload failed.';
                 }
+                // Hide live transcript after recording stops (optional)
+                // if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'none';
             };
         };
     </script>
