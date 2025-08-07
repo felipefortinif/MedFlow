@@ -6,7 +6,7 @@ import asyncio
 from vosk import Model, KaldiRecognizer
 import subprocess
 
-MODEL_PATH = os.environ.get('VOSK_MODEL_PATH', '/models/vosk-model-small-pt-0.3')
+MODEL_PATH = '/home/tomas/Fam_Enterprise/MedNotes/models/vosk-model-pt-fb'
 SAMPLE_RATE = 16000
 
 class TranscribeConsumer(AsyncWebsocketConsumer):
