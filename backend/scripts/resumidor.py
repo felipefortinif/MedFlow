@@ -74,15 +74,18 @@ texto = matches[0]["texto"]
 
 # 5) Gera resumo via OpenAI
 prompt = (
-    "Você é um assistente que faz resumos clínicos.\n"
+    "Você é um assistente que faz prontuários eletronicos.\n"
     "Transcrição da consulta:\n\n"
     f"{texto}\n\n"
-    "Resumo curto com os principais pontos:"
+    "O prontuário gerado deve conter os seguintes topicos respectivamente: Nome; Indicação(medico que indicou); Queixa principal; História da moléstia atual; Neuro-psíquico; Sistema locomotor; Estado geral de saúde; Doenças adulto; Outras doenças; Medicações em uso; Hospitalizações, acidentes, traumatismos e cirurgias; Alergias; Imunizações; Historia ocupacional e familiar; Outras drogas; Estilo de vida; Exercicio fisico; Frequência do exercicio; Queixas da vida sexual, sono, intestino"
+    "Os topicos que não podem ser completos atravez da transcrição devem aparecer como Não informado"
+    "Todas as informações devem ser tiradas da transcrição da consulta, não invente nenhuma informação"
+    "O prontuário deve ser escrito em markdown"
 )
 resp = openai.chat.completions.create(
     model="gpt-4.1-mini",
     messages=[{"role":"user","content":prompt}],
     temperature=0.3,
-    max_tokens=300
+    max_tokens=3000
 )
 print(resp.choices[0].message.content.strip())
