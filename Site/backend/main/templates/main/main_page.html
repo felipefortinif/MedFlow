@@ -56,7 +56,7 @@
                 statusDiv.textContent = 'Recording...';
                 recordBtn.disabled = true;
                 stopBtn.disabled = false;
-                mediaRecorder.start(1000); // 1s chunks
+                mediaRecorder.start(5000); // 5s chunks
             };
             ws.onmessage = (event) => {
                 try {

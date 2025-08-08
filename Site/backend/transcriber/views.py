@@ -22,7 +22,7 @@ class TranscribeAudioView(View):
         if hasattr(audio, 'transcript'):
             return JsonResponse({'transcript': audio.transcript.text, 'already_exists': True})
         # Run Whisper transcription
-        model = whisper.load_model("base")
+        model = whisper.load_model("medium")
         audio_path = os.path.join(settings.MEDIA_ROOT, audio.audio_file.name)
         result = model.transcribe(audio_path, language="pt")
         text = result["text"].strip()
