@@ -29,19 +29,3 @@ class TranscribeAudioView(View):
         transcript = Transcript.objects.create(audio=audio, text=text)
         return JsonResponse({'transcript': transcript.text, 'already_exists': False})
 
-@method_decorator(csrf_exempt, name='dispatch')
-class LiveTranscribeChunkView(View):
-    def post(self, request):
-        audio_file = request.FILES.get('audio')
-        if not audio_file:
-            return JsonResponse({'error': 'No audio file provided.'}, status=400)
-        # Save chunk to a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.webm', delete=True) as temp_audio:
-            for chunk in audio_file.chunks():
-                temp_audio.write(chunk)
-            temp_audio.flush()
-            # Transcribe with Whisper
-            model = whisper.load_model("base")
-            result = model.transcribe(temp_audio.name, language="pt")
-            text = result["text"].strip()
-        return JsonResponse({'transcript': text})

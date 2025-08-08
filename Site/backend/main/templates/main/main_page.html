@@ -28,6 +28,8 @@
         let chunkInterval = null;
         let stream = null;
         let ws = null;
+        let transcriptDocument = '';
+        let lastTranscriptText = '';
         const recordBtn = document.getElementById('recordBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('status');
@@ -44,7 +46,7 @@
 
         recordBtn.onclick = async () => {
             audioChunks = [];
-            liveTranscript = '';
+            transcriptDocument = ''; // Clear previous transcript
             if (liveTranscriptDiv) liveTranscriptDiv.textContent = '';
             if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'block';
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -60,10 +62,15 @@
                 try {
                     const data = JSON.parse(event.data);
                     if (data.text) {
-                        liveTranscript = data.text;
-                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = liveTranscript;
+                        // Only update if the new transcript is different
+                        if (data.text !== lastTranscriptText) {
+                            transcriptDocument = data.text;
+                            lastTranscriptText = data.text;
+                            if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument;
+                        }
                     } else if (data.partial) {
-                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = data.partial;
+                        // Show the document so far plus the current partial
+                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument + (data.partial ? ' ' + data.partial : '');
                     }
                 } catch (e) {
                     // Not JSON or error
