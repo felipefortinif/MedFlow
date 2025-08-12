@@ -30,18 +30,36 @@
 
         recordBtn.onclick = async () => {
             audioChunks = [];
-            transcriptDocument = ''; // Clear previous transcript
-            if (liveTranscriptDiv) liveTranscriptDiv.textContent = '';
-            if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'block';
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            mediaRecorder.ondataavailable = e => {
-                if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
-                    e.data.arrayBuffer().then(buf => ws.send(buf));
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
                     audioChunks.push(e.data);
                 }
             };
+            
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+                const response = await fetch('/audio/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    statusDiv.textContent = 'Audio uploaded successfully!';
+                    // Optionally, reload the page to show new recording
+                    // location.reload();
+                } else {
+                    statusDiv.textContent = 'Upload failed.';
+                }
+            };
+            
+            mediaRecorder.start();
+            statusDiv.textContent = 'Recording...';
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
         };
 
         stopBtn.onclick = () => {
@@ -53,27 +71,9 @@
                 mediaRecorder.requestData(); // Get last chunk
                 mediaRecorder.stop();
             }
-            
             statusDiv.textContent = 'Processing...';
             recordBtn.disabled = false;
             stopBtn.disabled = true;
-            mediaRecorder.onstop = async () => {
-                // Optionally, send all audioChunks as a full file for storage
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                const formData = new FormData();
-                formData.append('audio', audioBlob, 'recording.webm');
-                const response = await fetch('/audio/upload/', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (response.ok) {
-                    statusDiv.textContent = 'Audio uploaded successfully!';
-                } else {
-                    statusDiv.textContent = 'Upload failed.';
-                }
-                // Hide live transcript after recording stops (optional)
-                // if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'none';
-            };
         };
     </script>
 
