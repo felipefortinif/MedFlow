@@ -14,35 +14,19 @@
     <button id="recordBtn">Start Recording</button>
     <button id="stopBtn" disabled>Stop Recording</button>
     <div id="status"></div>
-    <div id="live-transcript-container" style="margin-top: 20px; display: none;">
-        <h3>Live Transcript</h3>
-        <div id="live-transcript" style="background: #f4f4f4; padding: 10px; min-height: 40px;"></div>
-    </div>
+    
     <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
     <script>
         let mediaRecorder;
         let audioChunks = [];
-        let liveTranscript = '';
-        let liveTranscriptDiv = null;
-        let liveTranscriptContainer = null;
         let chunkInterval = null;
-        let stream = null;
-        let ws = null;
-        let transcriptDocument = '';
-        let lastTranscriptText = '';
+       
         const recordBtn = document.getElementById('recordBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('status');
-        document.addEventListener('DOMContentLoaded', () => {
-            liveTranscriptDiv = document.getElementById('live-transcript');
-            liveTranscriptContainer = document.getElementById('live-transcript-container');
-        });
+        
 
-        function getWebSocketUrl() {
-            let loc = window.location;
-            let wsStart = loc.protocol === 'https:' ? 'wss://' : 'ws://';
-            return wsStart + loc.host + '/ws/transcribe/';
-        }
+        
 
         recordBtn.onclick = async () => {
             audioChunks = [];
@@ -51,37 +35,7 @@
             if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'block';
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
-            ws = new WebSocket(getWebSocketUrl());
-            ws.onopen = () => {
-                statusDiv.textContent = 'Recording...';
-                recordBtn.disabled = true;
-                stopBtn.disabled = false;
-                mediaRecorder.start(5000); // 5s chunks
-            };
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.text) {
-                        // Only update if the new transcript is different
-                        if (data.text !== lastTranscriptText) {
-                            transcriptDocument = data.text;
-                            lastTranscriptText = data.text;
-                            if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument;
-                        }
-                    } else if (data.partial) {
-                        // Show the document so far plus the current partial
-                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument + (data.partial ? ' ' + data.partial : '');
-                    }
-                } catch (e) {
-                    // Not JSON or error
-                }
-            };
-            ws.onerror = (e) => {
-                statusDiv.textContent = 'WebSocket error';
-            };
-            ws.onclose = () => {
-                statusDiv.textContent = 'WebSocket closed';
-            };
+            mediaRecorder.start();
             mediaRecorder.ondataavailable = e => {
                 if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
                     e.data.arrayBuffer().then(buf => ws.send(buf));
@@ -99,9 +53,7 @@
                 mediaRecorder.requestData(); // Get last chunk
                 mediaRecorder.stop();
             }
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
+            
             statusDiv.textContent = 'Processing...';
             recordBtn.disabled = false;
             stopBtn.disabled = true;
