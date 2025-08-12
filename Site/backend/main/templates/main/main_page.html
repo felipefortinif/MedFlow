@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Recorder</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        #recordBtn, #stopBtn { font-size: 1.2em; margin: 10px; }
+        #status { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Record Audio</h1>
+    <button id="recordBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <div id="status"></div>
+    <div id="live-transcript-container" style="margin-top: 20px; display: none;">
+        <h3>Live Transcript</h3>
+        <div id="live-transcript" style="background: #f4f4f4; padding: 10px; min-height: 40px;"></div>
+    </div>
+    <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let liveTranscript = '';
+        let liveTranscriptDiv = null;
+        let liveTranscriptContainer = null;
+        let chunkInterval = null;
+        let stream = null;
+        let ws = null;
+        let transcriptDocument = '';
+        let lastTranscriptText = '';
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        document.addEventListener('DOMContentLoaded', () => {
+            liveTranscriptDiv = document.getElementById('live-transcript');
+            liveTranscriptContainer = document.getElementById('live-transcript-container');
+        });
+
+        function getWebSocketUrl() {
+            let loc = window.location;
+            let wsStart = loc.protocol === 'https:' ? 'wss://' : 'ws://';
+            return wsStart + loc.host + '/ws/transcribe/';
+        }
+
+        recordBtn.onclick = async () => {
+            audioChunks = [];
+            transcriptDocument = ''; // Clear previous transcript
+            if (liveTranscriptDiv) liveTranscriptDiv.textContent = '';
+            if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'block';
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            ws = new WebSocket(getWebSocketUrl());
+            ws.onopen = () => {
+                statusDiv.textContent = 'Recording...';
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+                mediaRecorder.start(5000); // 5s chunks
+            };
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.text) {
+                        // Only update if the new transcript is different
+                        if (data.text !== lastTranscriptText) {
+                            transcriptDocument = data.text;
+                            lastTranscriptText = data.text;
+                            if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument;
+                        }
+                    } else if (data.partial) {
+                        // Show the document so far plus the current partial
+                        if (liveTranscriptDiv) liveTranscriptDiv.textContent = transcriptDocument + (data.partial ? ' ' + data.partial : '');
+                    }
+                } catch (e) {
+                    // Not JSON or error
+                }
+            };
+            ws.onerror = (e) => {
+                statusDiv.textContent = 'WebSocket error';
+            };
+            ws.onclose = () => {
+                statusDiv.textContent = 'WebSocket closed';
+            };
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                    e.data.arrayBuffer().then(buf => ws.send(buf));
+                    audioChunks.push(e.data);
+                }
+            };
+        };
+
+        stopBtn.onclick = () => {
+            if (chunkInterval) {
+                clearInterval(chunkInterval);
+                chunkInterval = null;
+            }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.requestData(); // Get last chunk
+                mediaRecorder.stop();
+            }
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+            statusDiv.textContent = 'Processing...';
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            mediaRecorder.onstop = async () => {
+                // Optionally, send all audioChunks as a full file for storage
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+                const response = await fetch('/audio/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    statusDiv.textContent = 'Audio uploaded successfully!';
+                } else {
+                    statusDiv.textContent = 'Upload failed.';
+                }
+                // Hide live transcript after recording stops (optional)
+                // if (liveTranscriptContainer) liveTranscriptContainer.style.display = 'none';
+            };
+        };
+    </script>
+
+    <h2>Previous Recordings</h2>
+    <ul>
+        {% for rec in recordings %}
+            <li>
+                <audio controls src="{{ rec.audio_file.url }}"></audio>
+                <small>Uploaded at: {{ rec.uploaded_at }}</small>
+                <button class="transcribe-btn" data-audio-id="{{ rec.id }}">Transcribe</button>
+                <span class="transcript-status" id="transcript-status-{{ rec.id }}"></span>
+                <div class="transcript-text" id="transcript-{{ rec.id }}"></div>
+            </li>
+        {% empty %}
+            <li>No recordings yet.</li>
+        {% endfor %}
+    </ul>
+    <script>
+    // CSRF token helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    document.querySelectorAll('.transcribe-btn').forEach(btn => {
+        btn.onclick = async function() {
+            const audioId = this.getAttribute('data-audio-id');
+            const statusSpan = document.getElementById('transcript-status-' + audioId);
+            const transcriptDiv = document.getElementById('transcript-' + audioId);
+            statusSpan.textContent = 'Transcribing...';
+            transcriptDiv.textContent = '';
+            try {
+                const response = await fetch(`/transcriber/transcribe/${audioId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                });
+                if (!response.ok) throw new Error('Transcription failed');
+                const data = await response.json();
+                statusSpan.textContent = data.already_exists ? 'Transcript (cached):' : 'Transcript:';
+                transcriptDiv.textContent = data.transcript;
+            } catch (e) {
+                statusSpan.textContent = 'Error: ' + e.message;
+            }
+        };
+    });
+    </script>
+</body>
+</html> 
