@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "audio_rec.apps.AudioRecConfig",
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
-    'channels',
+    "summerize.apps.SummerizeConfig",
 ]
 
 MIDDLEWARE = [
@@ -71,7 +71,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "backend.wsgi.application"
-ASGI_APPLICATION = 'backend.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
