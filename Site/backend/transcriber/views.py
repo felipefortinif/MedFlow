@@ -12,6 +12,8 @@ import tempfile
 
 # Create your views here.
 
+model = whisper.load_model("medium")
+
 class TranscribeAudioView(View):
     def post(self, request, audio_id):
         try:
@@ -22,10 +24,27 @@ class TranscribeAudioView(View):
         if hasattr(audio, 'transcript'):
             return JsonResponse({'transcript': audio.transcript.text, 'already_exists': True})
         # Run Whisper transcription
-        model = whisper.load_model("medium")
         audio_path = os.path.join(settings.MEDIA_ROOT, audio.audio_file.name)
         result = model.transcribe(audio_path, language="pt")
         text = result["text"].strip()
         transcript = Transcript.objects.create(audio=audio, text=text)
         return JsonResponse({'transcript': transcript.text, 'already_exists': False})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AudioBatchUploadView(View):
+    def post(self, request):
+        audio_file = request.FILES.get('audio')
+        if not audio_file:
+            return JsonResponse({'error': 'No audio file provided.'}, status=400)
+        
+        
+        # Save uploaded file to a temp file for Whisper
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as tmp:
+            for chunk in audio_file.chunks():
+                tmp.write(chunk)
+            tmp.flush()
+            result = model.transcribe(tmp.name, language="pt")
+        transcript = result["text"].strip()
+        return JsonResponse({'message': 'got it', 'transcript': transcript})
 

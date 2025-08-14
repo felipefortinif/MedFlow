@@ -14,8 +14,127 @@
     <button id="recordBtn">Start Recording</button>
     <button id="stopBtn" disabled>Stop Recording</button>
     <div id="status"></div>
+    <div id="transcript" style="margin-top:30px; border:1px solid #ccc; padding:10px; min-height:60px;">Transcript will appear here...</div>
     
     <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
     
+    <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let batchTimer = null;
+    let stopRequested = false;
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusDiv = document.getElementById('status');
+    const transcriptDiv = document.getElementById('transcript');
+
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('#csrf-form input[name=csrfmiddlewaretoken]');
+        return csrfInput ? csrfInput.value : '';
+    }
+
+    function appendTranscript(text) {
+        if (transcriptDiv.innerText === 'Transcript will appear here...') {
+            transcriptDiv.innerText = '';
+        }
+        transcriptDiv.innerText += text + ' ';
+    }
+
+    async function sendAudioBatch(blob, isFinal=false) {
+        const formData = new FormData();
+        formData.append('audio', blob, 'batch.wav');
+        formData.append('is_final', isFinal ? '1' : '0');
+        try {
+            const response = await fetch('transcriber/transcribe/batch/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.transcript) {
+                appendTranscript(data.transcript);
+            }
+            statusDiv.innerText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+        } catch (err) {
+            statusDiv.innerText = 'Error sending audio batch.';
+        }
+    }
+
+    function startBatchTimer() {
+        batchTimer = setTimeout(() => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop(); // triggers dataavailable
+            }
+        }, 30000); // 30 seconds
+    }
+
+    function clearBatchTimer() {
+        if (batchTimer) {
+            clearTimeout(batchTimer);
+            batchTimer = null;
+        }
+    }
+
+    function startRecording() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                isRecording = true;
+                stopRequested = false;
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusDiv.innerText = 'Recording...';
+                transcriptDiv.innerText = 'Transcript will appear here...';
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = async (e) => {
+                    audioChunks.push(e.data);
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioChunks = [];
+                    await sendAudioBatch(audioBlob, stopRequested);
+                    if (!stopRequested) {
+                        // Start next batch
+                        mediaRecorder.start();
+                        startBatchTimer();
+                    } else {
+                        isRecording = false;
+                        recordBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        statusDiv.innerText = 'Recording stopped.';
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                };
+
+                mediaRecorder.onstart = () => {
+                    audioChunks = [];
+                    startBatchTimer();
+                };
+
+                mediaRecorder.onstop = () => {
+                    clearBatchTimer();
+                };
+
+                // Start first batch
+                mediaRecorder.start();
+                startBatchTimer();
+            })
+            .catch(err => {
+                statusDiv.innerText = 'Microphone access denied.';
+            });
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            stopRequested = true;
+            mediaRecorder.stop(); // triggers dataavailable, isFinal=true
+        }
+    }
+
+    recordBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    </script>
 </body>
 </html> 
