@@ -40,11 +40,21 @@ class AudioBatchUploadView(View):
         
         
         # Save uploaded file to a temp file for Whisper
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as tmp:
-            for chunk in audio_file.chunks():
-                tmp.write(chunk)
-            tmp.flush()
-            result = model.transcribe(tmp.name, language="pt")
-        transcript = result["text"].strip()
-        return JsonResponse({'message': 'got it', 'transcript': transcript})
+        try: 
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:       #delete=False, pois no windows delete=True da erro de permissão
+                for chunk in audio_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+                tmp.flush()
+                result = model.transcribe(tmp.name, language="pt")
+            transcript = result["text"].strip()
+            return JsonResponse({'message': 'got it', 'transcript': transcript})
+        
+        finally:
+            # Remove o temp file manualmente para não acumular lixo
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
 
