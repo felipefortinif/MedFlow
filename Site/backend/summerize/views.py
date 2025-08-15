@@ -8,7 +8,10 @@ from dotenv import load_dotenv
 import json
 
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("A variável OPENAI_API_KEY não foi carregada.")
+openai.api_key = api_key
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SummarizeTranscriptView(View):

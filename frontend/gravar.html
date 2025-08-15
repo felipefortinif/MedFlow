@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Prontuário Automático — Gravação</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="screen">
+        <div class="topbar">
+            <h1 id="patient-name">Paciente</h1>
+            <a class="ghost-btn" href="index.html">← Voltar ao início</a>
+        </div>
+
+        <div class="record-area">
+            <button id="record-btn" class="record-btn">🎤 Gravar Áudio</button>
+            <div id="status" class="status">Pronto para gravar</div>
+            <div id="outputs"></div>
+
+            <!-- NOVO: botão aparece só depois que a gravação terminar -->
+            <button id="generate-btn" class="record-btn" style="display:none;">📝 Gerar Prontuário</button>
+        </div>
+
+
+    </div>
+
+    <script src="gravar.js"></script>
+</body>
+
+</html>
