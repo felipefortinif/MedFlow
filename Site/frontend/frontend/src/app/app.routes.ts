@@ -1,13 +1,12 @@
 import { Routes } from '@angular/router';
+import { TelaPrincipalComponent } from './tela_principal/tela_principal.component';
+import { GravarAudioComponent } from './gravar_audio/gravar_audio.component';
+import { ProntuarioComponent } from './prontuario/prontuario.component';
 
 export const routes: Routes = [
-	{ path: '', redirectTo: '/esquerda', pathMatch: 'full' },
-	{
-		path: 'esquerda',
-		loadComponent: () => import('./left-page/left-page.component').then((m) => m.LeftPageComponent),
-	},
-	{
-		path: 'direita',
-		loadComponent: () => import('./right-page/right-page.component').then((m) => m.RightPageComponent),
-	},
+	{ path: '', redirectTo: 'tela-principal', pathMatch: 'full' },
+	{ path: 'tela-principal', component: TelaPrincipalComponent },
+	{ path: 'gravar-audio', component: GravarAudioComponent },
+	{ path: 'prontuario', component: ProntuarioComponent },
+	{ path: '**', redirectTo: 'tela-principal' }
 ];

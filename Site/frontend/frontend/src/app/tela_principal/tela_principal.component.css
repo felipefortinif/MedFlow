@@ -1,0 +1,5 @@
+.screen { max-width: 720px; margin: 24px auto; padding: 16px; }
+label { display:block; margin-top: 12px; }
+input { width: 100%; padding: 8px; margin-top: 4px; }
+button { margin-top: 16px; padding: 10px 16px; }
+.error { color: #b00020; margin-top: 8px; }

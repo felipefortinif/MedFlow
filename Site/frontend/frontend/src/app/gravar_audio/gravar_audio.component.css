@@ -1,0 +1,5 @@
+.topbar { display:flex; justify-content: space-between; align-items:center; }
+.record-area { margin-top: 16px; }
+.record-btn { padding: 10px 16px; margin-right: 8px; }
+.status { margin-top: 8px; color: #555; }
+.transcript { margin-top: 12px; border: 1px solid #ccc; padding: 10px; min-height: 80px; }
