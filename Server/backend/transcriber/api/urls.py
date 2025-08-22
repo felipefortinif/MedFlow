@@ -5,5 +5,5 @@ from .views import AudioBatchUploadView
 app_name = 'transcriber'
 
 urlpatterns = [
-    path('transcribe/batch/', AudioBatchUploadView.as_view(), name='transcribe_batch'),
+    path('api/transcribe/batch/', AudioBatchUploadView.as_view(), name='transcribe_batch'),
 ] 

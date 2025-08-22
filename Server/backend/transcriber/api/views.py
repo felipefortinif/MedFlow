@@ -1,7 +1,8 @@
+
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from django.views import View
-from .models import Transcript
+from ..models import Transcript
 import whisper
 import os
 from django.conf import settings
@@ -40,4 +41,3 @@ class AudioBatchUploadView(View):
                     os.remove(tmp_path)
                 except Exception:
                     pass
-
