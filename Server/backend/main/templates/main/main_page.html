@@ -55,7 +55,7 @@
         formData.append('audio', blob, 'batch.wav');
         formData.append('is_final', isFinal ? '1' : '0');
         try {
-            const response = await fetch('transcriber/transcribe/batch/', {
+            const response = await fetch('transcriber/api/transcribe/batch/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken(),
@@ -163,7 +163,7 @@
     async function sendTranscriptForSummary() {
         summaryDiv.innerHTML = 'Summarizing...';
         try {
-            const response = await fetch('/summerize/', {
+            const response = await fetch('summerizer/api/summarize/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

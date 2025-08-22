@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "audio_rec.apps.AudioRecConfig",
+    'rest_framework',
+    'corsheaders',
+    'drf_yasg',
+    'rest_framework.authtoken',
+    'django_rest_passwordreset', #para recuperar senha
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
     "summerize.apps.SummerizeConfig",
@@ -51,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -114,6 +119,18 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Para permitir CORS
+CORS_ALLOW_ALL_ORIGINS = True  # In development only, allows all origins
+
+REST_FRAMEWORK = {
+'DEFAULT_SCHEMA_CLASS':
+'rest_framework.schemas.coreapi.AutoSchema',
+'DEFAULT_AUTHENTICATION_CLASSES': [
+'rest_framework.authentication.TokenAuthentication',
+],
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
