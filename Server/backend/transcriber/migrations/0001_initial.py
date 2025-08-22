@@ -8,10 +8,6 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ("audio_rec", "0001_initial"),
-    ]
-
     operations = [
         migrations.CreateModel(
             name="Transcript",
@@ -27,14 +23,7 @@ class Migration(migrations.Migration):
                 ),
                 ("text", models.TextField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                (
-                    "audio",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="transcript",
-                        to="audio_rec.audiorecording",
-                    ),
-                ),
+                
             ],
         ),
     ]

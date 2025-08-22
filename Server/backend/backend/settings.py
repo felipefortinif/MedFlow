@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "audio_rec.apps.AudioRecConfig",
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
     "summerize.apps.SummerizeConfig",
