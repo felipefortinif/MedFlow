@@ -24,5 +24,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("main.urls")),
     path("transcriber/", include("transcriber.api.urls")),
-    path("summerize/", include("summerize.urls")),
+    path("summerizer/", include("summerize.api.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
