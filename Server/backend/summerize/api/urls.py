@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import SummarizeTranscriptView
+from .views import SummarizeTranscriptAPIView
 
 app_name = 'summerizer'
 
 urlpatterns = [
-    path('api/summarize/', SummarizeTranscriptView.as_view(), name='summarize-transcript'),
+    path('api/summarize/', SummarizeTranscriptAPIView.as_view(), name='summarize-transcript'),
 ]

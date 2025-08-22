@@ -1,11 +1,22 @@
-from django.views import View
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 import os
 import openai
 from dotenv import load_dotenv
 import json
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import User
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.parsers import JSONParser
+
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+from .serializer import SummarizeTranscriptSerializer
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -13,16 +24,35 @@ if not api_key:
     raise ValueError("A variável OPENAI_API_KEY não foi carregada.")
 openai.api_key = api_key
 
-@method_decorator(csrf_exempt, name='dispatch')
-class SummarizeTranscriptView(View):
+
+class SummarizeTranscriptAPIView(APIView):
+    """
+    post:
+    Summarize a transcript into a structured medical record in markdown format.
+    """
+    @swagger_auto_schema(
+        operation_description="Summarize a transcript into a structured medical record in markdown format.",
+        request_body=SummarizeTranscriptSerializer,
+        responses={
+            200: openapi.Response(
+                description="Summary generated successfully.",
+                examples={"application/json": {"summary": "Resumo em markdown."}}
+            ),
+            400: openapi.Response(
+                description="Bad request.",
+                examples={"application/json": {"error": "No transcript provided."}}
+            ),
+            500: openapi.Response(
+                description="OpenAI error.",
+                examples={"application/json": {"error": "OpenAI error: ..."}}
+            )
+        }
+    )
     def post(self, request):
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-            transcript = data.get('transcript')
-        except Exception:
-            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
-        if not transcript:
-            return JsonResponse({'error': 'No transcript provided.'}, status=400)
+        serializer = SummarizeTranscriptSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        transcript = serializer.validated_data['transcript']
         prompt = (
             "Você é um assistente que faz prontuários eletronicos.\n"
             "Transcrição da consulta:\n\n"
@@ -41,5 +71,5 @@ class SummarizeTranscriptView(View):
             )
             summary = resp.choices[0].message.content.strip()
         except Exception as e:
-            return JsonResponse({'error': f'OpenAI error: {str(e)}'}, status=500)
-        return JsonResponse({'summary': summary})
+            return Response({'error': f'OpenAI error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'summary': summary}, status=status.HTTP_200_OK)
