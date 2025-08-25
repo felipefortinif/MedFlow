@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  font-family: Arial, sans-serif;
+  margin: 40px;
+}
+
+#recordBtn,
+#stopBtn {
+  font-size: 1.2em;
+  margin: 10px;
+}
+
+.status {
+  margin-top: 20px;
+}
+
+.box {
+  margin-top: 30px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 60px;
+}
+
+.summary {
+  border-color: #4caf50;
+  background: #f9fff9;
+}
