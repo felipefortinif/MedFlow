@@ -1,0 +1,20 @@
+<div class="screen">
+  <div class="topbar">
+    <h1>{{ patientName }}</h1>
+    <a class="ghost-btn" routerLink="/tela-principal">← Voltar ao início</a>
+  </div>
+
+  <div class="record-area">
+    <button class="record-btn" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar Áudio</button>
+    <button class="record-btn" (click)="stopRecording()" [disabled]="!isRecording">⏹️ Parar</button>
+
+    <div class="status">{{ status }}</div>
+
+    <div id="outputs">
+      <h3>Transcrição (parcial):</h3>
+      <div class="transcript">{{ transcript }}</div>
+    </div>
+
+    <button class="record-btn" *ngIf="showGenerate" (click)="generateProntuario()">📝 Gerar Prontuário</button>
+  </div>
+</div>

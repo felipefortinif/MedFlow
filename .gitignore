@@ -6,3 +6,4 @@ node_modules
 audio_recordings/
 models/
 .env
+Site/frontend/package-lock.json

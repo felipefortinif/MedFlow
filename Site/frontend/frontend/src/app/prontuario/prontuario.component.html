@@ -1,0 +1,23 @@
+<div class="screen">
+  <div class="topbar">
+    <h1>Prontuário do paciente {{ patientName }}</h1>
+    <a class="ghost-btn" routerLink="/tela-principal">← Início</a>
+  </div>
+
+  <div class="record-area">
+    <h3>Áudio gravado</h3>
+  <audio *ngIf="state.lastAudioBlob() as audioBlob" [src]="audioUrl(audioBlob)" controls></audio>
+    <p *ngIf="!state.lastAudioBlob()">Nenhum áudio disponível.</p>
+
+    <h3>Transcrição</h3>
+    <div class="transcript">{{ state.fullTranscript() || 'Sem transcrição.' }}</div>
+
+    <button class="record-btn" (click)="gerarProntuario()" [disabled]="isLoading || !state.fullTranscript()">Gerar Prontuário</button>
+    <div class="status" *ngIf="isLoading">Gerando prontuário...</div>
+
+    <div class="summary" *ngIf="summary">
+      <h3>Prontuário (Markdown)</h3>
+      <pre>{{ summary }}</pre>
+    </div>
+  </div>
+</div>
