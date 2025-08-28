@@ -9,7 +9,7 @@ export interface SummarizeResponse { summary: string; }
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   // Ajuste se o backend expõe em outra origem/porta
-  private baseUrl = 'http://localhost:8000';
+  private baseUrl = 'http://127.0.0.1:8000/';
 
   constructor(private http: HttpClient) {}
 
@@ -23,7 +23,7 @@ export class ApiService {
   transcribeBatch(file: Blob | File): Observable<BatchTranscribeResponse> {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
-    return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}/transcriber/transcribe/batch/`, form)
+    return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}/transcriber/api/transcribe/batch/`, form)
       .pipe(catchError(this.handleError));
   }
 
