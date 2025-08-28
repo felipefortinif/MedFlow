@@ -17,6 +17,7 @@ export class TelaTeste implements OnDestroy {
   transcriptText = '';
   canSummarize = false;
   summaryHtml: SafeHtml = '';
+  backendUrl = 'http://127.0.0.1:8000/'; 
 
   // Gravação
   private mediaRecorder: MediaRecorder | null = null;
@@ -146,7 +147,7 @@ export class TelaTeste implements OnDestroy {
     formData.append('is_final', isFinal ? '1' : '0');
 
     try {
-      const response = await fetch('transcriber/api/transcribe/batch/', {
+      const response = await fetch(this.backendUrl + 'transcriber/api/transcribe/batch/', {
         method: 'POST',
         headers: {
           'X-CSRFToken': this.getCSRFToken(),
@@ -167,7 +168,7 @@ export class TelaTeste implements OnDestroy {
     this.summaryHtml = 'Summarizing...';
 
     try {
-      const response = await fetch('summerizer/api/summarize/', {
+      const response = await fetch(this.backendUrl + 'summerizer/api/summarize/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
