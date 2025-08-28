@@ -41,7 +41,7 @@ class AudioBatchUploadAPIView(APIView):
         }
     )
     def post(self, request):
-        serializer = AudioUploadSerializer(data=request.data, files=request.FILES)
+        serializer = AudioUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         audio_file = serializer.validated_data['audio']
