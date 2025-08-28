@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +17,7 @@ export class TelaTeste implements OnDestroy {
   transcriptText = '';
   canSummarize = false;
   summaryHtml: SafeHtml = '';
-  backendUrl = 'http://127.0.0.1:8000/'; 
+  backendUrl = 'http://127.0.0.1:8000/';
 
   // Gravação
   private mediaRecorder: MediaRecorder | null = null;
@@ -29,12 +29,11 @@ export class TelaTeste implements OnDestroy {
   // Dados
   private fullTranscript = '';
 
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) {}
 
   // --------- Utilidades ---------
 
   private getCSRFToken(): string {
-    // Django costuma definir um cookie 'csrftoken'
     const name = 'csrftoken=';
     const decodedCookie = decodeURIComponent(document.cookie || '');
     const parts = decodedCookie.split(';');
@@ -53,6 +52,8 @@ export class TelaTeste implements OnDestroy {
     this.transcriptText += text + ' ';
     this.fullTranscript += text + ' ';
     this.canSummarize = this.fullTranscript.trim().length > 0;
+  // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
+  try { this.cdr.detectChanges(); } catch (_e) {}
   }
 
   private startBatchTimer(): void {
@@ -61,7 +62,7 @@ export class TelaTeste implements OnDestroy {
       if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
         this.mediaRecorder.stop(); // dispara ondataavailable
       }
-    }, 10000); // 10s
+    }, 10000); // 10s por batch
   }
 
   private clearBatchTimer(): void {
@@ -71,7 +72,7 @@ export class TelaTeste implements OnDestroy {
     }
   }
 
-  // --------- Fluxo de gravação ---------
+  // --------- Fluxo de gravação por BATCHES ---------
 
   startRecording(): void {
     navigator.mediaDevices
@@ -86,39 +87,8 @@ export class TelaTeste implements OnDestroy {
         this.fullTranscript = '';
 
         this.stream = stream;
-        this.mediaRecorder = new MediaRecorder(stream);
-        this.audioChunks = [];
-
-        this.mediaRecorder.ondataavailable = async (e: BlobEvent) => {
-          this.audioChunks.push(e.data);
-          const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-          this.audioChunks = [];
-
-          await this.sendAudioBatch(audioBlob, this.stopRequested);
-
-          if (!this.stopRequested && this.mediaRecorder) {
-            // reinicia próximo lote
-            this.mediaRecorder.start();
-            this.startBatchTimer();
-          } else {
-            this.isRecording = false;
-            this.statusText = 'Recording stopped.';
-            this.stopStream();
-          }
-        };
-
-        this.mediaRecorder.onstart = () => {
-          this.audioChunks = [];
-          this.startBatchTimer();
-        };
-
-        this.mediaRecorder.onstop = () => {
-          this.clearBatchTimer();
-        };
-
-        // inicia primeiro lote
-        this.mediaRecorder.start();
-        this.startBatchTimer();
+        // inicia o primeiro recorder de batch
+        this.startRecorderForBatch(stream);
       })
       .catch((_err) => {
         this.statusText = 'Microphone access denied.';
@@ -128,7 +98,7 @@ export class TelaTeste implements OnDestroy {
   stopRecording(): void {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.stopRequested = true;
-      this.mediaRecorder.stop(); // dispara ondataavailable final
+      this.mediaRecorder.stop(); // ondataavailable final terá isFinal = true
     }
   }
 
@@ -139,11 +109,61 @@ export class TelaTeste implements OnDestroy {
     }
   }
 
+  private startRecorderForBatch(stream: MediaStream): void {
+    // cria nova instância de MediaRecorder para cada batch (mais robusto em alguns browsers)
+    try {
+      this.mediaRecorder = new MediaRecorder(stream);
+    } catch (e) {
+      this.statusText = 'MediaRecorder not supported in this browser.';
+      return;
+    }
+
+    this.audioChunks = [];
+
+    this.mediaRecorder.ondataavailable = async (e: BlobEvent) => {
+      // coletar dados do batch atual
+      this.audioChunks.push(e.data);
+      const audioBlob = new Blob(this.audioChunks, { type: e.data.type || 'audio/webm' });
+      // limpa buffer para próximo batch
+      this.audioChunks = [];
+
+      // envia batch para backend; isFinal = stopRequested
+      await this.sendAudioBatch(audioBlob, this.stopRequested);
+
+      if (!this.stopRequested) {
+        // inicia próximo batch criando um novo MediaRecorder (evita problemas de reinício)
+        this.startRecorderForBatch(stream);
+      } else {
+        // finaliza fluxo
+        this.isRecording = false;
+        this.statusText = 'Recording stopped.';
+        this.stopStream();
+      }
+    };
+
+    this.mediaRecorder.onstart = () => {
+      this.startBatchTimer();
+    };
+
+    this.mediaRecorder.onstop = () => {
+      this.clearBatchTimer();
+      // ondataavailable será chamado logo em seguida contendo o batch atual
+    };
+
+    // inicia gravação do batch atual
+    try {
+      this.mediaRecorder.start();
+      this.startBatchTimer();
+    } catch (e) {
+      this.statusText = 'Failed to start MediaRecorder.';
+    }
+  }
+
   // --------- API ---------
 
   private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
     const formData = new FormData();
-    formData.append('audio', blob, 'batch.wav');
+    formData.append('audio', blob, 'batch.webm');
     formData.append('is_final', isFinal ? '1' : '0');
 
     try {
@@ -180,7 +200,6 @@ export class TelaTeste implements OnDestroy {
       const data: { summary?: string } = await response.json();
       if (data?.summary) {
         const html = this.markdownToHtml(data.summary);
-        // Sanitiza antes de injetar no template
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
       } else {
         this.summaryHtml = 'No summary returned.';
@@ -202,7 +221,6 @@ export class TelaTeste implements OnDestroy {
       .replace(/\n\n/g, '<br/><br/>')
       .replace(/\n/g, '<br/>');
 
-    // listas simples
     html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
     return html;
   }
