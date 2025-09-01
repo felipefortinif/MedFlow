@@ -60,6 +60,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.transcriptText = 'Transcript will appear here...';
         this.summaryHtml = '';
         this.canSummarize = false;
+        this.showGenerate = false;
         this.fullTranscript = '';
 
         this.stream = stream;
@@ -95,6 +96,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     }
     this.transcriptText += text + ' ';
     this.fullTranscript += text + ' ';
+    // manter StateService sincronizado para outras telas
+    try { this.state.appendTranscript(text); } catch (_e) {}
     this.canSummarize = this.fullTranscript.trim().length > 0;
   // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
   try { this.cdr.detectChanges(); } catch (_e) {}
@@ -199,6 +202,12 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       
       const data: { transcript?: string } = await response.json();
       if (data?.transcript) this.appendTranscript(data.transcript);
+
+      // Assim que o último batch for exibido, habilita gerar prontuário
+      if (isFinal) {
+        this.showGenerate = true;
+        try { this.cdr.detectChanges(); } catch { }
+      }
       
       this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
     } catch (_err) {
