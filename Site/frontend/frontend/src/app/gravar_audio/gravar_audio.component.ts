@@ -1,9 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../shared/api.service';
 import { StateService } from '../shared/state.service';
-import { firstValueFrom } from 'rxjs';
+import { SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -15,8 +14,12 @@ import { firstValueFrom } from 'rxjs';
 export class GravarAudioComponent implements OnInit, OnDestroy {
   status = 'Pronto para gravar';
   isRecording = false;
-  transcript = '';
+  transcriptText = '';
   showGenerate = false;
+  canSummarize = false;
+  summaryHtml: SafeHtml = '';
+  statusText = '';
+  backendUrl = 'http://127.0.0.1:8000/';
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -25,10 +28,13 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private batchTimer: ReturnType<typeof setTimeout> | null = null;
   private stopRequested = false;
 
-  constructor(private api: ApiService, private state: StateService, private router: Router) {}
+  // Dados
+  private fullTranscript = '';
+
+  constructor(private state: StateService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.transcript = '';
+    this.transcriptText = '';
     this.state.resetTranscript();
   }
 
@@ -44,28 +50,54 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     return this.state.paciente()?.nome ?? 'Paciente';
   }
 
-  async startRecording() {
-    if (this.isRecording) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.isRecording = true;
-      this.stopRequested = false;
-      this.status = 'Gravando...';
-      this.showGenerate = false;
-      this.transcript = '';
-      this.state.resetTranscript();
+  startRecording(): void {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream: MediaStream) => {
+        this.isRecording = true;
+        this.stopRequested = false;
+        this.statusText = 'Recording...';
+        this.transcriptText = 'Transcript will appear here...';
+        this.summaryHtml = '';
+        this.canSummarize = false;
+        this.fullTranscript = '';
 
-      this.stream = stream;
-      this.startRecorderForBatch(stream);
-    } catch (_e) {
-      this.status = 'Permissão do microfone negada.';
-    }
+        this.stream = stream;
+        // inicia o primeiro recorder de batch
+        this.startRecorderForBatch(stream);
+      })
+      .catch((_err) => {
+        this.statusText = 'Microphone access denied.';
+      });
   }
 
   stopRecording() {
     if (!this.isRecording || !this.mediaRecorder) return;
     this.stopRequested = true;
     this.mediaRecorder.stop();
+  }
+
+  private getCSRFToken(): string {
+    const name = 'csrftoken=';
+    const decodedCookie = decodeURIComponent(document.cookie || '');
+    const parts = decodedCookie.split(';');
+    for (let c of parts) {
+      c = c.trim();
+      if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
+    }
+    return '';
+  }
+
+  private appendTranscript(text: string): void {
+    if (!text) return;
+    if (!this.transcriptText || this.transcriptText === 'Transcript will appear here...') {
+      this.transcriptText = '';
+    }
+    this.transcriptText += text + ' ';
+    this.fullTranscript += text + ' ';
+    this.canSummarize = this.fullTranscript.trim().length > 0;
+  // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
+  try { this.cdr.detectChanges(); } catch (_e) {}
   }
 
   private startBatchTimer() {
@@ -93,18 +125,34 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   // Inicia um MediaRecorder para um batch e, ao finalizar, envia ao backend
   private startRecorderForBatch(stream: MediaStream): void {
+    // cria nova instância de MediaRecorder para cada batch (mais robusto em alguns browsers)
     try {
       this.mediaRecorder = new MediaRecorder(stream);
-    } catch (_e) {
-      this.status = 'MediaRecorder não suportado neste navegador.';
+    } catch (e) {
+      this.statusText = 'MediaRecorder not supported in this browser.';
       return;
     }
 
     this.audioChunks = [];
 
-    this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
-      if (e.data && e.data.size > 0) {
-        this.audioChunks.push(e.data);
+    this.mediaRecorder.ondataavailable = async (e: BlobEvent) => {
+      // coletar dados do batch atual
+      this.audioChunks.push(e.data);
+      const audioBlob = new Blob(this.audioChunks, { type: e.data.type || 'audio/webm' });
+      // limpa buffer para próximo batch
+      this.audioChunks = [];
+
+      // envia batch para backend; isFinal = stopRequested
+      await this.sendAudioBatch(audioBlob, this.stopRequested);
+
+      if (!this.stopRequested) {
+        // inicia próximo batch criando um novo MediaRecorder (evita problemas de reinício)
+        this.startRecorderForBatch(stream);
+      } else {
+        // finaliza fluxo
+        this.isRecording = false;
+        this.statusText = 'Recording stopped.';
+        this.stopStream();
       }
     };
 
@@ -112,42 +160,17 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.startBatchTimer();
     };
 
-    this.mediaRecorder.onstop = async () => {
+    this.mediaRecorder.onstop = () => {
       this.clearBatchTimer();
-      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      this.audioChunks = [];
-
-      // guarda último áudio completo do batch
-      this.state.setLastAudio(audioBlob);
-
-      // envia batch para transcrição
-      try {
-        const resp = await firstValueFrom(this.api.transcribeBatch(audioBlob));
-        if (resp?.transcript) {
-          this.state.appendTranscript(resp.transcript);
-          this.transcript = this.state.fullTranscript();
-        }
-      } catch (e) {
-        console.error('Erro ao transcrever batch', e);
-      }
-
-      if (!this.stopRequested) {
-        // inicia novo batch
-        this.startRecorderForBatch(stream);
-      } else {
-        // finalizou gravação
-        this.isRecording = false;
-        this.status = 'Gravação finalizada';
-        this.showGenerate = true;
-        this.stopStream();
-      }
+      // ondataavailable será chamado logo em seguida contendo o batch atual
     };
 
+    // inicia gravação do batch atual
     try {
       this.mediaRecorder.start();
       this.startBatchTimer();
-    } catch (_e) {
-      this.status = 'Falha ao iniciar gravação.';
+    } catch (e) {
+      this.statusText = 'Failed to start MediaRecorder.';
     }
   }
 
@@ -157,4 +180,32 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stream = null;
     }
   }
+  
+  // --------- API ---------
+  
+  private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
+    const formData = new FormData();
+    formData.append('audio', blob, 'batch.webm');
+    formData.append('is_final', isFinal ? '1' : '0');
+    
+    try {
+      const response = await fetch(this.backendUrl + 'transcriber/api/transcribe/batch/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': this.getCSRFToken(),
+        } as Record<string, string>,
+        body: formData,
+      });
+      
+      const data: { transcript?: string } = await response.json();
+      if (data?.transcript) this.appendTranscript(data.transcript);
+      
+      this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+    } catch (_err) {
+      this.statusText = 'Error sending audio batch.';
+    }
+  }
+
+  
+  
 }

@@ -23,7 +23,7 @@ export class ApiService {
   transcribeBatch(file: Blob | File): Observable<BatchTranscribeResponse> {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
-    return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}/transcriber/api/transcribe/batch/`, form)
+    return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}transcriber/api/transcribe/batch/`, form)
       .pipe(catchError(this.handleError));
   }
 
