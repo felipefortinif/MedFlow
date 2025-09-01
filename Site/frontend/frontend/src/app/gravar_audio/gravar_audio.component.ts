@@ -18,9 +18,12 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   transcript = '';
   showGenerate = false;
 
-  private mediaRecorder?: MediaRecorder;
-  private audioChunks: Blob[] = [];
-  private batchTimer?: any;
+  // Gravação em batches
+  private mediaRecorder: MediaRecorder | null = null;
+  private stream: MediaStream | null = null;
+  private audioChunks: BlobPart[] = [];
+  private batchTimer: ReturnType<typeof setTimeout> | null = null;
+  private stopRequested = false;
 
   constructor(private api: ApiService, private state: StateService, private router: Router) {}
 
@@ -31,9 +34,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearBatchTimer();
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.stop();
     }
+    this.stopStream();
   }
 
   get patientName(): string {
@@ -42,16 +46,64 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   async startRecording() {
     if (this.isRecording) return;
-    this.isRecording = true;
-    this.status = 'Gravando...';
-    this.showGenerate = false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.isRecording = true;
+      this.stopRequested = false;
+      this.status = 'Gravando...';
+      this.showGenerate = false;
+      this.transcript = '';
+      this.state.resetTranscript();
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    this.mediaRecorder = new MediaRecorder(stream);
+      this.stream = stream;
+      this.startRecorderForBatch(stream);
+    } catch (_e) {
+      this.status = 'Permissão do microfone negada.';
+    }
+  }
+
+  stopRecording() {
+    if (!this.isRecording || !this.mediaRecorder) return;
+    this.stopRequested = true;
+    this.mediaRecorder.stop();
+  }
+
+  private startBatchTimer() {
+    this.clearBatchTimer();
+    // encerra o batch atual após 10s
+    this.batchTimer = setTimeout(() => {
+      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+        this.mediaRecorder.stop(); // dispara onstop/ondataavailable
+      }
+    }, 10000);
+  }
+
+  private clearBatchTimer() {
+    if (this.batchTimer) {
+      clearTimeout(this.batchTimer);
+      this.batchTimer = null;
+    }
+  }
+
+  async generateProntuario() {
+    const text = this.state.fullTranscript();
+    if (!text) return;
+    this.router.navigateByUrl('/prontuario');
+  }
+
+  // Inicia um MediaRecorder para um batch e, ao finalizar, envia ao backend
+  private startRecorderForBatch(stream: MediaStream): void {
+    try {
+      this.mediaRecorder = new MediaRecorder(stream);
+    } catch (_e) {
+      this.status = 'MediaRecorder não suportado neste navegador.';
+      return;
+    }
+
     this.audioChunks = [];
 
     this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
-      if (e.data.size > 0) {
+      if (e.data && e.data.size > 0) {
         this.audioChunks.push(e.data);
       }
     };
@@ -62,99 +114,47 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
     this.mediaRecorder.onstop = async () => {
       this.clearBatchTimer();
-      const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      this.state.setLastAudio(blob);
-      // Upload final audio (optional) and enable generate
-      this.showGenerate = true;
-      this.status = 'Gravação finalizada';
-    };
+      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+      this.audioChunks = [];
 
-    this.mediaRecorder.start(1000);
-  }
+      // guarda último áudio completo do batch
+      this.state.setLastAudio(audioBlob);
 
-  stopRecording() {
-    if (!this.isRecording || !this.mediaRecorder) return;
-    this.isRecording = false;
-    this.mediaRecorder.stop();
-  }
-
-  private startBatchTimer() {
-    this.clearBatchTimer();
-    this.batchTimer = setInterval(async () => {
-      if (!this.audioChunks.length) return;
-      const chunk = new Blob(this.audioChunks.splice(0), { type: 'audio/webm' });
+      // envia batch para transcrição
       try {
-        const wavBlob = await this.convertWebmToWav(chunk);
-        const resp = await firstValueFrom(this.api.transcribeBatch(wavBlob));
+        const resp = await firstValueFrom(this.api.transcribeBatch(audioBlob));
         if (resp?.transcript) {
           this.state.appendTranscript(resp.transcript);
           this.transcript = this.state.fullTranscript();
         }
       } catch (e) {
-        console.error('Transcribe batch error', e);
+        console.error('Erro ao transcrever batch', e);
       }
-    }, 3000);
-  }
 
-  private clearBatchTimer() {
-    if (this.batchTimer) {
-      clearInterval(this.batchTimer);
-      this.batchTimer = undefined;
+      if (!this.stopRequested) {
+        // inicia novo batch
+        this.startRecorderForBatch(stream);
+      } else {
+        // finalizou gravação
+        this.isRecording = false;
+        this.status = 'Gravação finalizada';
+        this.showGenerate = true;
+        this.stopStream();
+      }
+    };
+
+    try {
+      this.mediaRecorder.start();
+      this.startBatchTimer();
+    } catch (_e) {
+      this.status = 'Falha ao iniciar gravação.';
     }
   }
 
-  async generateProntuario() {
-    const text = this.state.fullTranscript();
-    if (!text) return;
-    this.router.navigateByUrl('/prontuario');
-  }
-
-  // Simple audio conversion using Web Audio API to PCM WAV
-  private async convertWebmToWav(blob: Blob): Promise<Blob> {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-    const wavBuffer = this.encodeWAV(audioBuffer);
-    return new Blob([wavBuffer], { type: 'audio/wav' });
-  }
-
-  private encodeWAV(audioBuffer: AudioBuffer): ArrayBuffer {
-    const numOfChan = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numOfChan * 2 + 44;
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
-
-    this.writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + audioBuffer.length * numOfChan * 2, true);
-    this.writeString(view, 8, 'WAVE');
-    this.writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numOfChan, true);
-    view.setUint32(24, audioBuffer.sampleRate, true);
-    view.setUint32(28, audioBuffer.sampleRate * numOfChan * 2, true);
-    view.setUint16(32, numOfChan * 2, true);
-    view.setUint16(34, 16, true);
-    this.writeString(view, 36, 'data');
-    view.setUint32(40, audioBuffer.length * numOfChan * 2, true);
-
-    let offset = 44;
-    for (let i = 0; i < audioBuffer.length; i++) {
-      for (let ch = 0; ch < numOfChan; ch++) {
-        const sample = audioBuffer.getChannelData(ch)[i];
-        const s = Math.max(-1, Math.min(1, sample));
-        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-        offset += 2;
-      }
-    }
-
-    return buffer;
-  }
-
-  private writeString(view: DataView, offset: number, str: string) {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
+  private stopStream(): void {
+    if (this.stream) {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
     }
   }
 }
