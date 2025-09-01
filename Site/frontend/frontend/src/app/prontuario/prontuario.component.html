@@ -4,11 +4,6 @@
     <a class="ghost-btn" routerLink="/tela-principal">← Início</a>
   </div>
 
-  <div class="record-area">
-    <h3>Áudio gravado</h3>
-  <audio *ngIf="state.lastAudioBlob() as audioBlob" [src]="audioUrl(audioBlob)" controls></audio>
-    <p *ngIf="!state.lastAudioBlob()">Nenhum áudio disponível.</p>
-
     <h3>Transcrição</h3>
     <div class="transcript">{{ state.fullTranscript() || 'Sem transcrição.' }}</div>
 
@@ -16,8 +11,7 @@
     <div class="status" *ngIf="isLoading">Gerando prontuário...</div>
 
     <div class="summary" *ngIf="summary">
-      <h3>Prontuário (Markdown)</h3>
-      <pre>{{ summary }}</pre>
+      <h3>Prontuário</h3>
+  <div [innerHTML]="summary"></div>
     </div>
-  </div>
 </div>
