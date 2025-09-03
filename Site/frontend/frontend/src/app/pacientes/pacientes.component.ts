@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 interface PacienteItem {
   nome: string;
@@ -11,7 +11,7 @@ interface PacienteItem {
 @Component({
   selector: 'app-pacientes',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.css']
 })
@@ -26,7 +26,7 @@ export class PacientesComponent {
   constructor(private router: Router) {}
 
   adicionarPaciente() {
-    // Leva para a tela principal para cadastro/fluxo de novo paciente
-    this.router.navigateByUrl('/tela-principal');
+    // Leva para a tela de adicionar paciente
+    this.router.navigateByUrl('/adicionar-paciente');
   }
 }
