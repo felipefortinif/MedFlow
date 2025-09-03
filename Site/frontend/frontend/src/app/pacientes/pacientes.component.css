@@ -1,0 +1,9 @@
+.screen { padding: 16px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.add-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; background: #f3f4f6; }
+
+.list { display: grid; gap: 10px; }
+.item { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; background: white; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: #0ea5e9; color: white; display: grid; place-items: center; font-weight: 600; }
+.info .nome { font-weight: 600; }
+.info .meta { color: #6b7280; font-size: 0.9rem; }

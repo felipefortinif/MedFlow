@@ -36,8 +36,8 @@ export class AuthComponent {
     this.error = '';
     try {
       // TODO: integrar com backend
-      await new Promise(r => setTimeout(r, 600));
-      this.router.navigateByUrl('/tela-principal');
+  await new Promise(r => setTimeout(r, 600));
+  this.router.navigateByUrl('/pacientes');
     } catch (e) {
       this.error = 'Falha no login';
     } finally {
@@ -50,8 +50,8 @@ export class AuthComponent {
     this.error = '';
     try {
       // TODO: integrar com backend
-      await new Promise(r => setTimeout(r, 800));
-      this.router.navigateByUrl('/tela-principal');
+  await new Promise(r => setTimeout(r, 800));
+  this.router.navigateByUrl('/pacientes');
     } catch (e) {
       this.error = 'Falha no cadastro';
     } finally {
