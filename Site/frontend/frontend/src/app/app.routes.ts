@@ -14,5 +14,5 @@ export const routes: Routes = [
 	{ path: 'gravar-audio', component: GravarAudioComponent },
 	{ path: 'prontuario', component: ProntuarioComponent },
 	{ path: 'tela-teste', component: TelaTeste},
-	{ path: '**', redirectTo: 'login' }
+	{ path: '**', redirectTo: 'pacientes' }
 ];
