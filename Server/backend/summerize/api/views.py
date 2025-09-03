@@ -64,7 +64,7 @@ class SummarizeTranscriptAPIView(APIView):
         )
         try:
             resp = openai.chat.completions.create(
-                model="gpt-4.1-mini",
+                model="gpt-4.1", 
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 max_tokens=3000
