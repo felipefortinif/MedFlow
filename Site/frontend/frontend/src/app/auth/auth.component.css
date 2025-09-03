@@ -1,0 +1,68 @@
+:host {
+  --bg: #ffffff;
+  --card: #e2e4e3;
+  --text: #171718;
+  --muted: #9ca3af;
+  --primary: #174126;
+}
+
+.auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card {
+  width: min(92vw, 420px);
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid #24262b;
+  color: var(--text);
+  border-radius: 3px;
+}
+
+.tab.active {
+  color: white;
+  background-color: var(--primary);
+  border-color: var(--text);
+}
+
+label { display:block; margin: 10px 0 6px; font-size: 0.9rem; color: var(--text); }
+input {
+  width: 95%;
+  padding: 10px 12px;
+  border-radius: 3px;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: var(--text);
+}
+
+.primary {
+    width: 40%;
+    display: block;
+    margin: 16px auto 0;
+    background-color: var(--primary);
+    border: none;
+    color: #ffffff;
+    padding: 10px 12px;
+    border-radius: 3px;
+}
+
+.status { margin-top: 10px; min-height: 20px; }
+.error { color: #f87171; }

@@ -1,0 +1,36 @@
+<div class="auth-screen">
+  <div class="card">
+    <div class="tabs">
+      <button class="tab" [class.active]="mode==='login'" (click)="switch('login')">Entrar</button>
+      <button class="tab" [class.active]="mode==='signup'" (click)="switch('signup')">Cadastrar</button>
+    </div>
+
+    <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
+      <label>Email</label>
+      <input type="email" [(ngModel)]="loginEmail" name="loginEmail" required />
+
+      <label>Senha</label>
+      <input type="password" [(ngModel)]="loginPassword" name="loginPassword" required />
+
+      <button class="primary" type="submit" [disabled]="isLoading">Entrar</button>
+    </form>
+
+    <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
+      <label>Nome</label>
+      <input type="text" [(ngModel)]="signupName" name="signupName" required />
+
+      <label>Email</label>
+      <input type="email" [(ngModel)]="signupEmail" name="signupEmail" required />
+
+      <label>Senha</label>
+      <input type="password" [(ngModel)]="signupPassword" name="signupPassword" required />
+
+      <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
+    </form>
+
+    <div class="status">
+      <span *ngIf="isLoading">Processando...</span>
+      <span class="error" *ngIf="!isLoading && error">{{ error }}</span>
+    </div>
+  </div>
+</div>
