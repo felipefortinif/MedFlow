@@ -11,7 +11,7 @@ export class ApiService {
   // Ajuste se o backend expõe em outra origem/porta
   private baseUrl = 'http://127.0.0.1:8000/';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   uploadAudio(file: Blob | File): Observable<UploadAudioResponse> {
     const form = new FormData();
