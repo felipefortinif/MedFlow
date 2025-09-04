@@ -19,7 +19,7 @@
   background: var(--card);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
 }
 
 .tabs {
@@ -43,7 +43,13 @@
   border-color: var(--text);
 }
 
-label { display:block; margin: 10px 0 6px; font-size: 0.9rem; color: var(--text); }
+label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
 input {
   width: 95%;
   padding: 10px 12px;
@@ -54,15 +60,33 @@ input {
 }
 
 .primary {
-    width: 40%;
-    display: block;
-    margin: 16px auto 0;
-    background-color: var(--primary);
-    border: none;
-    color: #ffffff;
-    padding: 10px 12px;
-    border-radius: 3px;
+  width: 40%;
+  display: block;
+  margin: 16px auto 0;
+  background-color: var(--primary);
+  border: none;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 3px;
 }
 
-.status { margin-top: 10px; min-height: 20px; }
-.error { color: #f87171; }
+.status {
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.error {
+  color: #f87171;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* link estilo */
+a.link {
+  cursor: pointer;
+  color: var(--primary);
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
