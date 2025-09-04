@@ -1,9 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../shared/api.service';
 import { StateService } from '../shared/state.service';
-import { firstValueFrom } from 'rxjs';
+import { SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -15,91 +14,109 @@ import { firstValueFrom } from 'rxjs';
 export class GravarAudioComponent implements OnInit, OnDestroy {
   status = 'Pronto para gravar';
   isRecording = false;
-  transcript = '';
+  transcriptText = '';
   showGenerate = false;
+  canSummarize = false;
+  summaryHtml: SafeHtml = '';
+  statusText = '';
+  backendUrl = 'http://127.0.0.1:8000/';
 
-  private mediaRecorder?: MediaRecorder;
-  private audioChunks: Blob[] = [];
-  private batchTimer?: any;
+  // Gravação em batches
+  private mediaRecorder: MediaRecorder | null = null;
+  private stream: MediaStream | null = null;
+  private audioChunks: BlobPart[] = [];
+  private batchTimer: ReturnType<typeof setTimeout> | null = null;
+  private stopRequested = false;
 
-  constructor(private api: ApiService, private state: StateService, private router: Router) {}
+  // Dados
+  private fullTranscript = '';
+
+  constructor(private state: StateService, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.transcript = '';
+    this.transcriptText = '';
     this.state.resetTranscript();
   }
 
   ngOnDestroy(): void {
     this.clearBatchTimer();
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.mediaRecorder.stop();
     }
+    this.stopStream();
   }
 
   get patientName(): string {
     return this.state.paciente()?.nome ?? 'Paciente';
   }
 
-  async startRecording() {
-    if (this.isRecording) return;
-    this.isRecording = true;
-    this.status = 'Gravando...';
-    this.showGenerate = false;
+  startRecording(): void {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream: MediaStream) => {
+        this.isRecording = true;
+        this.stopRequested = false;
+        this.statusText = 'Recording...';
+        this.transcriptText = 'Transcript will appear here...';
+        this.summaryHtml = '';
+        this.canSummarize = false;
+        this.showGenerate = false;
+        this.fullTranscript = '';
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    this.mediaRecorder = new MediaRecorder(stream);
-    this.audioChunks = [];
-
-    this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
-      if (e.data.size > 0) {
-        this.audioChunks.push(e.data);
-      }
-    };
-
-    this.mediaRecorder.onstart = () => {
-      this.startBatchTimer();
-    };
-
-    this.mediaRecorder.onstop = async () => {
-      this.clearBatchTimer();
-      const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      this.state.setLastAudio(blob);
-      // Upload final audio (optional) and enable generate
-      this.showGenerate = true;
-      this.status = 'Gravação finalizada';
-    };
-
-    this.mediaRecorder.start(1000);
+        this.stream = stream;
+        // inicia o primeiro recorder de batch
+        this.startRecorderForBatch(stream);
+      })
+      .catch((_err) => {
+        this.statusText = 'Microphone access denied.';
+      });
   }
 
   stopRecording() {
     if (!this.isRecording || !this.mediaRecorder) return;
-    this.isRecording = false;
+    this.stopRequested = true;
     this.mediaRecorder.stop();
+  }
+
+  private getCSRFToken(): string {
+    const name = 'csrftoken=';
+    const decodedCookie = decodeURIComponent(document.cookie || '');
+    const parts = decodedCookie.split(';');
+    for (let c of parts) {
+      c = c.trim();
+      if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
+    }
+    return '';
+  }
+
+  private appendTranscript(text: string): void {
+    if (!text) return;
+    if (!this.transcriptText || this.transcriptText === 'Transcript will appear here...') {
+      this.transcriptText = '';
+    }
+    this.transcriptText += text + ' ';
+    this.fullTranscript += text + ' ';
+    // manter StateService sincronizado para outras telas
+    try { this.state.appendTranscript(text); } catch (_e) {}
+    this.canSummarize = this.fullTranscript.trim().length > 0;
+  // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
+  try { this.cdr.detectChanges(); } catch (_e) {}
   }
 
   private startBatchTimer() {
     this.clearBatchTimer();
-    this.batchTimer = setInterval(async () => {
-      if (!this.audioChunks.length) return;
-      const chunk = new Blob(this.audioChunks.splice(0), { type: 'audio/webm' });
-      try {
-        const wavBlob = await this.convertWebmToWav(chunk);
-        const resp = await firstValueFrom(this.api.transcribeBatch(wavBlob));
-        if (resp?.transcript) {
-          this.state.appendTranscript(resp.transcript);
-          this.transcript = this.state.fullTranscript();
-        }
-      } catch (e) {
-        console.error('Transcribe batch error', e);
+    // encerra o batch atual após 10s
+    this.batchTimer = setTimeout(() => {
+      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+        this.mediaRecorder.stop(); // dispara onstop/ondataavailable
       }
-    }, 3000);
+    }, 10000);
   }
 
   private clearBatchTimer() {
     if (this.batchTimer) {
-      clearInterval(this.batchTimer);
-      this.batchTimer = undefined;
+      clearTimeout(this.batchTimer);
+      this.batchTimer = null;
     }
   }
 
@@ -109,52 +126,95 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl('/prontuario');
   }
 
-  // Simple audio conversion using Web Audio API to PCM WAV
-  private async convertWebmToWav(blob: Blob): Promise<Blob> {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  // Inicia um MediaRecorder para um batch e, ao finalizar, envia ao backend
+  private startRecorderForBatch(stream: MediaStream): void {
+    // cria nova instância de MediaRecorder para cada batch (mais robusto em alguns browsers)
+    try {
+      this.mediaRecorder = new MediaRecorder(stream);
+    } catch (e) {
+      this.statusText = 'MediaRecorder not supported in this browser.';
+      return;
+    }
 
-    const wavBuffer = this.encodeWAV(audioBuffer);
-    return new Blob([wavBuffer], { type: 'audio/wav' });
-  }
+    this.audioChunks = [];
 
-  private encodeWAV(audioBuffer: AudioBuffer): ArrayBuffer {
-    const numOfChan = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numOfChan * 2 + 44;
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
+    this.mediaRecorder.ondataavailable = async (e: BlobEvent) => {
+      // coletar dados do batch atual
+      this.audioChunks.push(e.data);
+      const audioBlob = new Blob(this.audioChunks, { type: e.data.type || 'audio/webm' });
+      // limpa buffer para próximo batch
+      this.audioChunks = [];
 
-    this.writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + audioBuffer.length * numOfChan * 2, true);
-    this.writeString(view, 8, 'WAVE');
-    this.writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numOfChan, true);
-    view.setUint32(24, audioBuffer.sampleRate, true);
-    view.setUint32(28, audioBuffer.sampleRate * numOfChan * 2, true);
-    view.setUint16(32, numOfChan * 2, true);
-    view.setUint16(34, 16, true);
-    this.writeString(view, 36, 'data');
-    view.setUint32(40, audioBuffer.length * numOfChan * 2, true);
+      // envia batch para backend; isFinal = stopRequested
+      await this.sendAudioBatch(audioBlob, this.stopRequested);
 
-    let offset = 44;
-    for (let i = 0; i < audioBuffer.length; i++) {
-      for (let ch = 0; ch < numOfChan; ch++) {
-        const sample = audioBuffer.getChannelData(ch)[i];
-        const s = Math.max(-1, Math.min(1, sample));
-        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-        offset += 2;
+      if (!this.stopRequested) {
+        // inicia próximo batch criando um novo MediaRecorder (evita problemas de reinício)
+        this.startRecorderForBatch(stream);
+      } else {
+        // finaliza fluxo
+        this.isRecording = false;
+        this.statusText = 'Recording stopped.';
+        this.stopStream();
       }
-    }
+    };
 
-    return buffer;
+    this.mediaRecorder.onstart = () => {
+      this.startBatchTimer();
+    };
+
+    this.mediaRecorder.onstop = () => {
+      this.clearBatchTimer();
+      // ondataavailable será chamado logo em seguida contendo o batch atual
+    };
+
+    // inicia gravação do batch atual
+    try {
+      this.mediaRecorder.start();
+      this.startBatchTimer();
+    } catch (e) {
+      this.statusText = 'Failed to start MediaRecorder.';
+    }
   }
 
-  private writeString(view: DataView, offset: number, str: string) {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
+  private stopStream(): void {
+    if (this.stream) {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
     }
   }
+  
+  // --------- API ---------
+  
+  private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
+    const formData = new FormData();
+    formData.append('audio', blob, 'batch.webm');
+    formData.append('is_final', isFinal ? '1' : '0');
+    
+    try {
+      const response = await fetch(this.backendUrl + 'transcriber/api/transcribe/batch/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': this.getCSRFToken(),
+        } as Record<string, string>,
+        body: formData,
+      });
+      
+      const data: { transcript?: string } = await response.json();
+      if (data?.transcript) this.appendTranscript(data.transcript);
+
+      // Assim que o último batch for exibido, habilita gerar prontuário
+      if (isFinal) {
+        this.showGenerate = true;
+        try { this.cdr.detectChanges(); } catch { }
+      }
+      
+      this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+    } catch (_err) {
+      this.statusText = 'Error sending audio batch.';
+    }
+  }
+
+  
+  
 }

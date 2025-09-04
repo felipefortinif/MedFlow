@@ -1,7 +1,7 @@
 <div class="screen">
   <div class="topbar">
-    <h1>{{ patientName }}</h1>
-    <a class="ghost-btn" routerLink="/tela-principal">← Voltar ao início</a>
+    <h1>Paciente: {{ patientName }}</h1>
+    <a class="ghost-btn" routerLink="/pacientes">← Voltar ao início</a>
   </div>
 
   <div class="record-area">
@@ -12,7 +12,7 @@
 
     <div id="outputs">
       <h3>Transcrição (parcial):</h3>
-      <div class="transcript">{{ transcript }}</div>
+      <div class="transcript">{{ transcriptText }}</div>
     </div>
 
     <button class="record-btn" *ngIf="showGenerate" (click)="generateProntuario()">📝 Gerar Prontuário</button>

@@ -1,12 +1,16 @@
 import { Routes } from '@angular/router';
-import { TelaPrincipalComponent } from './tela_principal/tela_principal.component';
+import { AdicionarPacienteComponent } from './adicionar_paciente/adicionar_paciente.component';
 import { GravarAudioComponent } from './gravar_audio/gravar_audio.component';
 import { ProntuarioComponent } from './prontuario/prontuario.component';
+import { AuthComponent } from './auth/auth.component';
+import { PacientesComponent } from './pacientes/pacientes.component';
 
 export const routes: Routes = [
-	{ path: '', redirectTo: 'tela-principal', pathMatch: 'full' },
-	{ path: 'tela-principal', component: TelaPrincipalComponent },
+	{ path: '', redirectTo: 'login', pathMatch: 'full' },
+	{ path: 'login', component: AuthComponent },
+	{ path: 'pacientes', component: PacientesComponent },
+	{ path: 'adicionar-paciente', component: AdicionarPacienteComponent },
 	{ path: 'gravar-audio', component: GravarAudioComponent },
 	{ path: 'prontuario', component: ProntuarioComponent },
-	{ path: '**', redirectTo: 'tela-principal' }
+	{ path: '**', redirectTo: 'pacientes' }
 ];

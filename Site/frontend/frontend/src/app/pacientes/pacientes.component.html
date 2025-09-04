@@ -1,0 +1,16 @@
+<div class="screen">
+  <div class="topbar">
+    <h1>Pacientes</h1>
+    <button class="add-btn" (click)="adicionarPaciente()">+ Adicionar</button>
+  </div>
+
+  <div class="list">
+    <div class="item" *ngFor="let p of pacientes">
+      <div class="avatar">{{ p.nome.charAt(0) }}</div>
+      <div class="info">
+        <div class="nome">{{ p.nome }}</div>
+        <div class="meta">CPF: {{ p.cpf }} • {{ p.nascimento }}</div>
+      </div>
+    </div>
+  </div>
+</div>

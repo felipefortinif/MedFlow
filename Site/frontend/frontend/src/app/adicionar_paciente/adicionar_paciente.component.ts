@@ -5,13 +5,13 @@ import { Router } from '@angular/router';
 import { StateService } from '../shared/state.service';
 
 @Component({
-  selector: 'app-tela-principal',
+  selector: 'app-adicionar-paciente',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './tela_principal.component.html',
-  styleUrls: ['./tela_principal.component.css']
+  templateUrl: './adicionar_paciente.component.html',
+  styleUrls: ['./adicionar_paciente.component.css']
 })
-export class TelaPrincipalComponent {
+export class AdicionarPacienteComponent {
   nome = '';
   cpf = '';
   nascimento = '';
