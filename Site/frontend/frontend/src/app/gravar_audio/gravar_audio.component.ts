@@ -188,34 +188,25 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // --------- API ---------
 
   private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
-    const formData = new FormData();
-    formData.append('audio', blob, 'batch.webm');
-    formData.append('is_final', isFinal ? '1' : '0');
-
     try {
-      const response = await fetch(this.backendUrl + 'transcriber/api/transcribe/batch/', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': this.getCSRFToken(),
-        } as Record<string, string>,
-        body: formData,
+      // Chama o serviço centralizado
+      this.api.transcribeBatch(blob).subscribe({
+        next: (data) => {
+          if (data?.transcript) this.appendTranscript(data.transcript);
+          if (isFinal) {
+            this.showGenerate = true;
+            try { this.cdr.detectChanges(); } catch { }
+          }
+          this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+        },
+        error: (_err) => {
+          this.statusText = 'Error sending audio batch.';
+        }
       });
-
-      const data: { transcript?: string } = await response.json();
-      if (data?.transcript) this.appendTranscript(data.transcript);
-
-      // Assim que o último batch for exibido, habilita gerar prontuário
-      if (isFinal) {
-        this.showGenerate = true;
-        try { this.cdr.detectChanges(); } catch { }
-      }
-
-      this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
     } catch (_err) {
       this.statusText = 'Error sending audio batch.';
     }
   }
-
 
 
 }
