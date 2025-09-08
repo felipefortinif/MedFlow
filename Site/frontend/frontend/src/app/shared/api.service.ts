@@ -27,10 +27,10 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
-  summarizeTranscript(transcript: string): Observable<SummarizeResponse> {
+  summarizeTranscript(transcript: string, CSRFToken: string): Observable<SummarizeResponse> {
     const body = { transcript };
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<SummarizeResponse>(`${this.baseUrl}/summerize/`, body, { headers })
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
+    return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
       .pipe(catchError(this.handleError));
   }
 

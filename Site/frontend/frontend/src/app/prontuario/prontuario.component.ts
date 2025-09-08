@@ -58,10 +58,10 @@ export class ProntuarioComponent {
   async gerarProntuario() {
     this.isLoading = true;
     this.summary = 'Summarizing...';
-
     try {
-      const data = await firstValueFrom(this.api.summarizeTranscript(this.state.fullTranscript()));
-
+      const data = await firstValueFrom(
+        this.api.summarizeTranscript(this.state.fullTranscript(), this.getCSRFToken())
+      );
       if (data?.summary) {
         const html = this.markdownToHtml(data.summary);
         this.summary = this.sanitizer.bypassSecurityTrustHtml(html);
