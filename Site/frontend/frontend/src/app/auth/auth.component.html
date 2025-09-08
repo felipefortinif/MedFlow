@@ -1,8 +1,8 @@
 <div class="auth-screen">
   <div class="card">
     <div class="tabs">
-      <button class="tab" [class.active]="mode==='login'" (click)="switch('login')">Entrar</button>
-      <button class="tab" [class.active]="mode==='signup'" (click)="switch('signup')">Cadastrar</button>
+      <button type="button" class="tab" [class.active]="mode==='login'" (click)="switch('login')">Entrar</button>
+      <button type="button" class="tab" [class.active]="mode==='signup'" (click)="switch('signup')">Cadastrar</button>
     </div>
 
     <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
@@ -12,7 +12,10 @@
       <label>Senha</label>
       <input type="password" [(ngModel)]="loginPassword" name="loginPassword" required />
 
-      <button class="primary" type="submit" [disabled]="isLoading">Entrar</button>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="primary" type="submit" [disabled]="isLoading">Entrar</button>
+        <a class="link" (click)="switch('forgot')">Esqueci minha senha</a>
+      </div>
     </form>
 
     <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
@@ -28,7 +31,22 @@
       <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
     </form>
 
-    <div class="status">
+    <form *ngIf="mode==='forgot'" (ngSubmit)="sendPasswordReset()">
+      <label>Informe seu e-mail</label>
+      <input type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <button class="primary" type="submit" [disabled]="isLoading">Enviar</button>
+        <a class="link" (click)="switch('login')">Voltar</a>
+      </div>
+
+      <div class="status" style="margin-top:10px;">
+        <span *ngIf="isLoading">Enviando...</span>
+        <span class="muted" *ngIf="!isLoading && forgotMessage">{{ forgotMessage }}</span>
+        <span class="error" *ngIf="!isLoading && forgotError">{{ forgotError }}</span>
+      </div>
+    </form>
+
+    <div class="status" *ngIf="mode!=='forgot'">
       <span *ngIf="isLoading">Processando...</span>
       <span class="error" *ngIf="!isLoading && error">{{ error }}</span>
     </div>

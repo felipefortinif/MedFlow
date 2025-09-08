@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./auth.component.css']
 })
 export class AuthComponent {
-  mode: 'login' | 'signup' = 'login';
+  mode: 'login' | 'signup' | 'forgot' = 'login';
 
   // simples estado local; depois integre com backend
   loginEmail = '';
@@ -21,14 +21,20 @@ export class AuthComponent {
   signupEmail = '';
   signupPassword = '';
 
+  forgotEmail = '';
+  forgotMessage = '';
+  forgotError = '';
+
   isLoading = false;
   error = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) { }
 
-  switch(mode: 'login' | 'signup') {
+  switch(mode: 'login' | 'signup' | 'forgot') {
     this.mode = mode;
     this.error = '';
+    this.forgotMessage = '';
+    this.forgotError = '';
   }
 
   async onLogin() {
@@ -36,8 +42,8 @@ export class AuthComponent {
     this.error = '';
     try {
       // TODO: integrar com backend
-  await new Promise(r => setTimeout(r, 600));
-  this.router.navigateByUrl('/pacientes');
+      await new Promise(r => setTimeout(r, 600));
+      this.router.navigateByUrl('/pacientes');
     } catch (e) {
       this.error = 'Falha no login';
     } finally {
@@ -50,10 +56,30 @@ export class AuthComponent {
     this.error = '';
     try {
       // TODO: integrar com backend
-  await new Promise(r => setTimeout(r, 800));
-  this.router.navigateByUrl('/pacientes');
+      await new Promise(r => setTimeout(r, 800));
+      this.router.navigateByUrl('/pacientes');
     } catch (e) {
       this.error = 'Falha no cadastro';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async sendPasswordReset() {
+    this.isLoading = true;
+    this.forgotMessage = '';
+    this.forgotError = '';
+    try {
+      if (!this.forgotEmail) {
+        this.forgotError = 'Informe o e-mail.';
+        return;
+      }
+      // TODO: substituir por chamada real ao backend (ex: ApiService.requestPasswordReset)
+      await new Promise(r => setTimeout(r, 800));
+      this.forgotMessage = 'Se o e-mail existir, você receberá instruções para resetar sua senha.';
+      this.forgotEmail = '';
+    } catch (e) {
+      this.forgotError = 'Falha ao solicitar redefinição.';
     } finally {
       this.isLoading = false;
     }

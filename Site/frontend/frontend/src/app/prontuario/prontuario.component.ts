@@ -23,7 +23,8 @@ export class ProntuarioComponent {
     public state: StateService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-  ) {}
+    private api: ApiService
+  ) { }
 
   get patientName(): string {
     return this.state.paciente()?.nome ?? 'Paciente';
@@ -57,34 +58,24 @@ export class ProntuarioComponent {
   async gerarProntuario() {
     this.isLoading = true;
     this.summary = 'Summarizing...';
-
     try {
-      const response = await fetch(this.backendUrl + 'summerizer/api/summarize/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': this.getCSRFToken(),
-        } as Record<string, string>,
-        body: JSON.stringify({ transcript: this.state.fullTranscript() }),
-      });
-
-      const data: { summary?: string } = await response.json();
+      const data = await firstValueFrom(
+        this.api.summarizeTranscript(this.state.fullTranscript(), this.getCSRFToken())
+      );
       if (data?.summary) {
         const html = this.markdownToHtml(data.summary);
         this.summary = this.sanitizer.bypassSecurityTrustHtml(html);
-        try { this.cdr.detectChanges(); } catch {}
       } else {
         this.summary = 'No summary returned.';
-        try { this.cdr.detectChanges(); } catch {}
       }
     } catch (_err) {
       this.summary = 'Error summarizing transcript.';
-      try { this.cdr.detectChanges(); } catch {}
     } finally {
       this.isLoading = false;
-      try { this.cdr.detectChanges(); } catch {}
+      try { this.cdr.detectChanges(); } catch { }
     }
   }
+
 
   audioUrl(blob: Blob | null): string | null {
     if (!blob) return null;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { StateService } from '../shared/state.service';
 import { SafeHtml } from '@angular/platform-browser';
+import { ApiService } from '../shared/api.service';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -31,7 +32,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // Dados
   private fullTranscript = '';
 
-  constructor(private state: StateService, private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private state: StateService, private router: Router, private cdr: ChangeDetectorRef, private api: ApiService) { }
 
   ngOnInit(): void {
     this.transcriptText = '';
@@ -97,10 +98,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.transcriptText += text + ' ';
     this.fullTranscript += text + ' ';
     // manter StateService sincronizado para outras telas
-    try { this.state.appendTranscript(text); } catch (_e) {}
+    try { this.state.appendTranscript(text); } catch (_e) { }
     this.canSummarize = this.fullTranscript.trim().length > 0;
-  // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
-  try { this.cdr.detectChanges(); } catch (_e) {}
+    // Garantir que Angular detecte a mudança mesmo que o evento venha de fora da zona
+    try { this.cdr.detectChanges(); } catch (_e) { }
   }
 
   private startBatchTimer() {
@@ -183,38 +184,29 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stream = null;
     }
   }
-  
-  // --------- API ---------
-  
-  private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
-    const formData = new FormData();
-    formData.append('audio', blob, 'batch.webm');
-    formData.append('is_final', isFinal ? '1' : '0');
-    
-    try {
-      const response = await fetch(this.backendUrl + 'transcriber/api/transcribe/batch/', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': this.getCSRFToken(),
-        } as Record<string, string>,
-        body: formData,
-      });
-      
-      const data: { transcript?: string } = await response.json();
-      if (data?.transcript) this.appendTranscript(data.transcript);
 
-      // Assim que o último batch for exibido, habilita gerar prontuário
-      if (isFinal) {
-        this.showGenerate = true;
-        try { this.cdr.detectChanges(); } catch { }
-      }
-      
-      this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+  // --------- API ---------
+
+  private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
+    try {
+      // Chama o serviço centralizado
+      this.api.transcribeBatch(blob).subscribe({
+        next: (data) => {
+          if (data?.transcript) this.appendTranscript(data.transcript);
+          if (isFinal) {
+            this.showGenerate = true;
+            try { this.cdr.detectChanges(); } catch { }
+          }
+          this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+        },
+        error: (_err) => {
+          this.statusText = 'Error sending audio batch.';
+        }
+      });
     } catch (_err) {
       this.statusText = 'Error sending audio batch.';
     }
   }
 
-  
-  
+
 }
