@@ -20,6 +20,7 @@ export class AuthComponent {
   signupName = '';
   signupEmail = '';
   signupPassword = '';
+  signupPasswordConfirm = '';
 
   forgotEmail = '';
   forgotMessage = '';
@@ -54,6 +55,11 @@ export class AuthComponent {
   async onSignup() {
     this.isLoading = true;
     this.error = '';
+    if (this.signupPassword !== this.signupPasswordConfirm) {
+      this.error = 'As senhas não coincidem.';
+      this.isLoading = false;
+      return;
+    }
     try {
       // TODO: integrar com backend
       await new Promise(r => setTimeout(r, 800));
