@@ -40,6 +40,13 @@ export class AuthComponent {
   async onLogin() {
     this.isLoading = true;
     this.error = '';
+
+    if (!this.loginEmail || !this.loginPassword) {
+      this.error = 'Preencha todos os campos.';
+      this.isLoading = false;
+      return;
+    }
+
     try {
       // TODO: integrar com backend
       await new Promise(r => setTimeout(r, 600));
@@ -54,6 +61,13 @@ export class AuthComponent {
   async onSignup() {
     this.isLoading = true;
     this.error = '';
+
+    if (!this.signupName || !this.signupEmail || !this.signupPassword) {//|| !this.signupPasswordConfirm) {
+      this.error = 'Preencha todos os campos.';
+      this.isLoading = false;
+      return;
+    }
+
     try {
       // TODO: integrar com backend
       await new Promise(r => setTimeout(r, 800));
