@@ -53,15 +53,61 @@ class SummarizeTranscriptAPIView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         transcript = serializer.validated_data['transcript']
-        prompt = (
-            "Você é um assistente que faz prontuários eletronicos.\n"
-            "Transcrição da consulta:\n\n"
-            f"{transcript}\n\n"
-            "O prontuário gerado deve conter os seguintes topicos respectivamente: Nome; Indicação(medico que indicou); Queixa principal; História da moléstia atual; Neuro-psíquico; Sistema locomotor; Estado geral de saúde; Doenças adulto; Outras doenças; Medicações em uso; Hospitalizações, acidentes, traumatismos e cirurgias; Alergias; Imunizações; Historia ocupacional e familiar; Outras drogas; Estilo de vida; Exercicio fisico; Frequência do exercicio; Queixas da vida sexual, sono, intestino"
-            "Os topicos que não podem ser completos atravez da transcrição devem aparecer como Não informado"
-            "Todas as informações devem ser tiradas da transcrição da consulta, não invente nenhuma informação"
-            "O prontuário deve ser escrito em markdown"
-        )
+
+        # -----------------MEDICINA DA DOR-----------------
+        # prompt = (
+        #     "Você é um assistente que faz prontuários eletronicos.\n"
+        #     "Transcrição da consulta:\n\n"
+        #     f"{transcript}\n\n"
+        #     "O prontuário gerado deve conter os seguintes topicos respectivamente: Nome; Indicação(medico que indicou); Queixa principal; História da moléstia atual; Neuro-psíquico; Sistema locomotor; Estado geral de saúde; Doenças adulto; Outras doenças; Medicações em uso; Hospitalizações, acidentes, traumatismos e cirurgias; Alergias; Imunizações; Historia ocupacional e familiar; Outras drogas; Estilo de vida; Exercicio fisico; Frequência do exercicio; Queixas da vida sexual, sono, intestino"
+        #     "Os topicos que não podem ser completos atravez da transcrição devem aparecer como Não informado"
+        #     "Todas as informações devem ser tiradas da transcrição da consulta, não invente nenhuma informação"
+        #     "O prontuário deve ser escrito em markdown"
+        # )
+        
+        #------------------CIRURGIA------------------
+        prompt = f"""
+        Você é um assistente que monta prontuários eletrônicos.
+
+        Transcrição da consulta (use SOMENTE estas informações):
+        {transcript}
+
+        INSTRUÇÕES GERAIS
+        - Escreva em português do Brasil, em **Markdown**.
+        - Extraia apenas o que está explícito na transcrição. **Não invente informações**.
+        - Se não houver dado suficiente para um tópico, escreva **"Não informado"**.
+        - Registre negações quando aparecerem (ex.: "nega alergias", "nega cirurgias").
+        - Seja específico e fiel às palavras do paciente/médico. Evite termos vagos.
+        - Não inclua seções extras nem comentários sobre o seu raciocínio.
+
+        TOPICOS (ordem e títulos EXATOS abaixo)
+        1) Nome
+        2) Queixa principal
+        3) História da doença atual
+        4) Alergia
+        5) Doenças associadas
+        6) Cirurgias prévias
+
+        FORMATO DE SAÍDA (use exatamente estes cabeçalhos Markdown):
+        ### Nome
+        <preencha aqui ou "Não informado">
+
+        ### Queixa principal
+        <motivo do paciente estar ali; caso nao haja, escreva "Não informado">
+
+        ### História da doença atual
+        <tudo relacionado a queixa principal; caso nao haja, escreva "Não informado">
+
+        ### Alergia
+        <preencha aqui ou "Não informado">
+
+        ### Doenças associadas
+        <liste todas as doenças citadas (podem ou não interferir no tratamento) e inclua tratamentos/medicações atuais quando mencionados; caso não haja, escreva "Não informado">
+
+        ### Cirurgias prévias
+        <liste as cirurgias já realizadas; se houver negação explícita, registre; caso contrário, escreva "Não informado">
+        """
+        
         try:
             resp = openai.chat.completions.create(
                 model="gpt-4.1", 
