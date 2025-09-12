@@ -15,12 +15,11 @@ class Specialties(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
-    email = models.EmailField(blank=False)
-    cpf = models.CharField(max_length=20, blank=False)
+    cpf = models.CharField(max_length=20, blank=False, unique=True)
     date_of_birth = models.DateField(blank=True, null=True)
-    photo = models.ImageField(upload_to='users/%Y/%m/%d/',blank=True)
+    # photo = models.ImageField(upload_to='users/%Y/%m/%d/',blank=True)
     phone = models.CharField(max_length=20, blank=True)
-    crm = models.CharField(max_length=20, blank=False)
+    crm = models.CharField(max_length=20, blank=False, unique=True)
     specialty = models.ForeignKey(Specialties, on_delete=models.CASCADE, blank=False)
     
     def __str__(self):

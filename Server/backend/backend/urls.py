@@ -29,7 +29,7 @@ urlpatterns = [
     path("", include("main.urls")),
     path("transcriber/", include("transcriber.api.urls")),
     path("summerizer/", include("summerize.api.urls")),
-    
+    path("doctor/", include("doctor.api.urls")),
     
      path('docs/',
         include_docs_urls(title='Documentação da API')),

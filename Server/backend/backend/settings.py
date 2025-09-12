@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "doctor.apps.DoctorConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,7 +46,6 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
     "summerize.apps.SummerizeConfig",
-    "doctor.apps.DoctorConfig",
 ]
 
 MIDDLEWARE = [
