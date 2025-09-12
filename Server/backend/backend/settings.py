@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
     "summerize.apps.SummerizeConfig",
+    "doctor.apps.DoctorConfig",
 ]
 
 MIDDLEWARE = [
@@ -138,7 +139,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = "/media/"
+MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
