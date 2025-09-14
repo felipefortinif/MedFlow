@@ -29,7 +29,7 @@ urlpatterns = [
     path("", include("main.urls")),
     path("transcriber/", include("transcriber.api.urls")),
     path("summerizer/", include("summerize.api.urls")),
-    
+    path("doctor/", include("doctor.api.urls")),
     
      path('docs/',
         include_docs_urls(title='Documentação da API')),
@@ -43,4 +43,8 @@ urlpatterns = [
             title="API para MedNotes",
             description="API para obter transcrições e resumos de áudios de consulta médica",),
         name='openapi-schema'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] 
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+     
