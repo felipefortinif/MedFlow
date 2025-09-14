@@ -44,6 +44,7 @@ class SpecialtiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialties
         fields = [
+            'id',
             'specialty',
             'slug',
         ]

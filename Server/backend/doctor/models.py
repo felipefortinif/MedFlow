@@ -3,7 +3,7 @@ from django.conf import settings
 
 class Specialties(models.Model):
     specialty = models.CharField(max_length=255, blank=False)
-    slug = models.SlugField(max_length=255, blank=False)
+    slug = models.SlugField(max_length=255, blank=False, unique=True)
     
     class Meta:
         verbose_name = 'Specialty'
