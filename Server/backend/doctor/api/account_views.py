@@ -261,6 +261,7 @@ class AccountAPI(APIView):
 
                 return Response({"message": "Doctor profile created successfully."}, status=status.HTTP_201_CREATED)
             else:
+                user.delete()
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:

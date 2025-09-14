@@ -27,7 +27,7 @@ class Profile(models.Model):
 
 
 class Patients(models.Model):
-    doctor = models.ForeignKey(Profile, on_delete=models.CASCADE, blank=False)
+    doctor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='patients', on_delete=models.CASCADE, blank=False)
     name = models.CharField(max_length=255, blank=False)
     email = models.EmailField(blank=False)
     cpf = models.CharField(max_length=20, blank=False)
@@ -50,7 +50,7 @@ class Patients(models.Model):
         return self.name
 
 class Prognostics(models.Model):
-    doctor = models.ForeignKey(Profile, on_delete=models.CASCADE, blank=False)
+    doctor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='prognostics', on_delete=models.CASCADE, blank=False)
     patient = models.ForeignKey(Patients, on_delete=models.CASCADE, blank=False)
     prognostic = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
