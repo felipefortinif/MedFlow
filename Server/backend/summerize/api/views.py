@@ -55,17 +55,6 @@ class SummarizeTranscriptAPIView(APIView):
         transcript = serializer.validated_data['transcript']
 
         # -----------------MEDICINA DA DOR-----------------
-        # prompt = (
-        #     "Você é um assistente que faz prontuários eletronicos.\n"
-        #     "Transcrição da consulta:\n\n"
-        #     f"{transcript}\n\n"
-        #     "O prontuário gerado deve conter os seguintes topicos respectivamente: Nome; Indicação(medico que indicou); Queixa principal; História da moléstia atual; Neuro-psíquico; Sistema locomotor; Estado geral de saúde; Doenças adulto; Outras doenças; Medicações em uso; Hospitalizações, acidentes, traumatismos e cirurgias; Alergias; Imunizações; Historia ocupacional e familiar; Outras drogas; Estilo de vida; Exercicio fisico; Frequência do exercicio; Queixas da vida sexual, sono, intestino"
-        #     "Os topicos que não podem ser completos atravez da transcrição devem aparecer como Não informado"
-        #     "Todas as informações devem ser tiradas da transcrição da consulta, não invente nenhuma informação"
-        #     "O prontuário deve ser escrito em markdown"
-        # )
-        
-        #------------------CIRURGIA------------------
         prompt = f"""
         Você é um assistente que monta prontuários eletrônicos.
 
@@ -77,36 +66,135 @@ class SummarizeTranscriptAPIView(APIView):
         - Extraia apenas o que está explícito na transcrição. **Não invente informações**.
         - Se não houver dado suficiente para um tópico, escreva **"Não informado"**.
         - Registre negações quando aparecerem (ex.: "nega alergias", "nega cirurgias").
-        - Seja específico e fiel às palavras do paciente/médico. Evite termos vagos.
-        - Não inclua seções extras nem comentários sobre o seu raciocínio.
+        - Use frases curtas e objetivas, mantendo fidedignidade às palavras do paciente/médico.
+        - Onde fizer sentido (listas de doenças, cirurgias, medicações), use itens com "- ".
+        - Não inclua seções extras nem comentários sobre seu raciocínio.
+        - Se houver datas, mantenha-as como foram ditas; se unidades forem mencionadas, preserve-as.
 
-        TOPICOS (ordem e títulos EXATOS abaixo)
+        TÓPICOS (ordem e títulos EXATOS abaixo)
         1) Nome
-        2) Queixa principal
-        3) História da doença atual
-        4) Alergia
-        5) Doenças associadas
-        6) Cirurgias prévias
+        2) Indicação(medico que indicou)
+        3) Queixa principal
+        4) História da moléstia atual
+        5) Neuro-psíquico
+        6) Sistema locomotor
+        7) Estado geral de saúde
+        8) Doenças adulto
+        9) Outras doenças
+        10) Medicações em uso
+        11) Hospitalizações, acidentes, traumatismos e cirurgias
+        12) Alergias
+        13) Imunizações
+        14) Historia ocupacional e familiar
+        15) Outras drogas
+        16) Estilo de vida
+        17) Exercicio fisico
+        18) Frequência do exercicio
+        19) Queixas da vida sexual, sono, intestino
 
-        FORMATO DE SAÍDA (use exatamente estes cabeçalhos Markdown):
+        FORMATO DE SAÍDA (use exatamente estes cabeçalhos Markdown, nesta ordem)
+
         ### Nome
         <preencha aqui ou "Não informado">
 
-        ### Queixa principal
-        <motivo do paciente estar ali; caso nao haja, escreva "Não informado">
-
-        ### História da doença atual
-        <tudo relacionado a queixa principal; caso nao haja, escreva "Não informado">
-
-        ### Alergia
+        ### Indicação(medico que indicou)
         <preencha aqui ou "Não informado">
 
-        ### Doenças associadas
-        <liste todas as doenças citadas (podem ou não interferir no tratamento) e inclua tratamentos/medicações atuais quando mencionados; caso não haja, escreva "Não informado">
+        ### Queixa principal
+        <preencha aqui ou "Não informado">
 
-        ### Cirurgias prévias
-        <liste as cirurgias já realizadas; se houver negação explícita, registre; caso contrário, escreva "Não informado">
+        ### História da moléstia atual
+        <preencha aqui ou "Não informado">
+
+        ### Neuro-psíquico
+        <preencha aqui ou "Não informado">
+
+        ### Sistema locomotor
+        <preencha aqui ou "Não informado">
+
+        ### Estado geral de saúde
+        <preencha aqui ou "Não informado">
+
+        ### Doenças adulto
+        <liste doenças do adulto citadas; se nenhuma, "Não informado">
+
+        ### Outras doenças
+        <liste outras condições mencionadas; se nenhuma, "Não informado">
+
+        ### Medicações em uso
+        <liste nome/dose/frequência se mencionados; se nenhuma, "Não informado">
+
+        ### Hospitalizações, acidentes, traumatismos e cirurgias
+        <liste eventos relevantes (com data/local se citados); se nega, registre; caso contrário, "Não informado">
+
+        ### Alergias
+        <liste alergias e reações; se nega, registre; caso contrário, "Não informado">
+
+        ### Imunizações
+        <liste vacinas e datas se citadas; se não houver, "Não informado">
+
+        ### Historia ocupacional e familiar
+        <resuma o que for mencionado (trabalho, exposições, antecedentes familiares); se nada constar, "Não informado">
+
+        ### Outras drogas
+        <registre uso/negação de álcool, tabaco, ilícitas etc. conforme a transcrição; se nada constar, "Não informado">
+
+        ### Estilo de vida
+        <ex.: dieta, rotina, hábitos se citados; se nada constar, "Não informado">
+
+        ### Exercicio fisico
+        <tipo, duração, frequência se citados; se nada constar, "Não informado">
+
+        ### Frequência do exercicio
+        <detalhe a frequência se mencionada separadamente; caso contrário, "Não informado">
+
+        ### Queixas da vida sexual, sono, intestino
+        <registre o que foi dito para cada aspecto; se nada constar, "Não informado">
         """
+
+        
+        #------------------CIRURGIA------------------
+        # prompt = f"""
+        # Você é um assistente que monta prontuários eletrônicos.
+
+        # Transcrição da consulta (use SOMENTE estas informações):
+        # {transcript}
+
+        # INSTRUÇÕES GERAIS
+        # - Escreva em português do Brasil, em **Markdown**.
+        # - Extraia apenas o que está explícito na transcrição. **Não invente informações**.
+        # - Se não houver dado suficiente para um tópico, escreva **"Não informado"**.
+        # - Registre negações quando aparecerem (ex.: "nega alergias", "nega cirurgias").
+        # - Seja específico e fiel às palavras do paciente/médico. Evite termos vagos.
+        # - Não inclua seções extras nem comentários sobre o seu raciocínio.
+
+        # TOPICOS (ordem e títulos EXATOS abaixo)
+        # 1) Nome
+        # 2) Queixa principal
+        # 3) História da doença atual
+        # 4) Alergia
+        # 5) Doenças associadas
+        # 6) Cirurgias prévias
+
+        # FORMATO DE SAÍDA (use exatamente estes cabeçalhos Markdown):
+        # ### Nome
+        # <preencha aqui ou "Não informado">
+
+        # ### Queixa principal
+        # <motivo do paciente estar ali; caso nao haja, escreva "Não informado">
+
+        # ### História da doença atual
+        # <tudo relacionado a queixa principal; caso nao haja, escreva "Não informado">
+
+        # ### Alergia
+        # <preencha aqui ou "Não informado">
+
+        # ### Doenças associadas
+        # <liste todas as doenças citadas (podem ou não interferir no tratamento) e inclua tratamentos/medicações atuais quando mencionados; caso não haja, escreva "Não informado">
+
+        # ### Cirurgias prévias
+        # <liste as cirurgias já realizadas; se houver negação explícita, registre; caso contrário, escreva "Não informado">
+        # """
         
         try:
             resp = openai.chat.completions.create(
