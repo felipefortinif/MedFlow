@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HttpClientModule],
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.css']
 })
@@ -29,7 +30,9 @@ export class AuthComponent {
   isLoading = false;
   error = '';
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private http: HttpClient) { }
+
+  private backendUrl = 'http://127.0.0.1:8000';
 
   switch(mode: 'login' | 'signup' | 'forgot') {
     this.mode = mode;
@@ -49,11 +52,30 @@ export class AuthComponent {
     }
 
     try {
-      // TODO: integrar com backend
-      await new Promise(r => setTimeout(r, 600));
-      this.router.navigateByUrl('/pacientes');
+      // No backend, o endpoint espera username e password
+      const payload = { username: this.loginEmail, password: this.loginPassword };
+      const resp = await this.http.post<{ token: string; msg?: string }>(
+        `${this.backendUrl}/doctor/token-auth/`,
+        payload
+      ).toPromise();
+
+      if (resp && resp.token) {
+        // Guarde o token (Bearer/Token) – backend usa DRF Token
+        localStorage.setItem('auth_token', resp.token);
+        // Opcional: prefixo para header Authorization em chamadas futuras
+        // Ex.: 'Token ' + token
+        this.router.navigateByUrl('/pacientes');
+      } else {
+        this.error = resp?.msg || 'Falha no login';
+      }
     } catch (e) {
-      this.error = 'Falha no login';
+      // DRF envia 401 com body {msg: 'Login ou Senha Inválidos.'}
+        let msg = 'Falha no login';
+        if (e && typeof e === 'object') {
+          const anyErr = e as { error?: any; message?: string };
+          msg = anyErr?.error?.msg || anyErr?.message || msg;
+        }
+      this.error = msg;
     } finally {
       this.isLoading = false;
     }
