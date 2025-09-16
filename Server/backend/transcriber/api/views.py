@@ -52,7 +52,19 @@ class AudioBatchUploadAPIView(APIView):
                     tmp.write(chunk)
                 tmp_path = tmp.name
                 tmp.flush()
-                result = model.transcribe(tmp.name, language="pt")
+                result = model.transcribe(
+                    tmp.name, 
+                    fp16=True,
+                    language="pt",
+                    task="transcribe",
+                    temperature= (0.0, 0.2, 0.4, 0.6),
+                    best_of=5,
+                    no_speech_threshold=0.6,
+                    compression_ratio_threshold=2.4,
+                    suppress_blank=True,
+                    condition_on_previous_text=False, #<= mudar para True quando a feature de contexto estiver pronta
+                    # initial_prompt= tail
+                    )
             transcript = result["text"].strip()
             return Response({'transcript': transcript}, status=status.HTTP_200_OK)
         except Exception as e:

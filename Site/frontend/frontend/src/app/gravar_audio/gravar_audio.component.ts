@@ -111,7 +111,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
         this.mediaRecorder.stop(); // dispara onstop/ondataavailable
       }
-    }, 10000);
+    }, 20000);
   }
 
   private clearBatchTimer() {
