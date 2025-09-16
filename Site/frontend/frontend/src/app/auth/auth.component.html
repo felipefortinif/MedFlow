@@ -28,6 +28,9 @@
       <label>Senha</label>
       <input type="password" [(ngModel)]="signupPassword" name="signupPassword" required />
 
+      <label>Confirmar senha</label>
+      <input type="password" [(ngModel)]="signupPasswordConfirm" name="signupPasswordConfirm" required />
+
       <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
     </form>
 
