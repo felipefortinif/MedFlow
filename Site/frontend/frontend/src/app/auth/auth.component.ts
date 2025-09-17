@@ -2,7 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
+import { ApiService, LoginResponse } from '../shared/api.service';
 
 @Component({
   selector: 'app-auth',
@@ -30,9 +31,7 @@ export class AuthComponent {
   isLoading = false;
   error = '';
 
-  constructor(private router: Router, private http: HttpClient) { }
-
-  private backendUrl = 'http://127.0.0.1:8000';
+  constructor(private router: Router, private api: ApiService) { }
 
   switch(mode: 'login' | 'signup' | 'forgot') {
     this.mode = mode;
@@ -52,21 +51,18 @@ export class AuthComponent {
     }
 
     try {
-      // No backend, o endpoint espera username e password
-      const payload = { username: this.loginEmail, password: this.loginPassword };
-      const resp = await this.http.post<{ token: string; msg?: string }>(
-        `${this.backendUrl}/doctor/token-auth/`,
-        payload
-      ).toPromise();
+      const resp = await (await import('rxjs')).firstValueFrom(
+        this.api.login(this.loginEmail, this.loginPassword)
+      );
 
-      if (resp && resp.token) {
+      if (resp && (resp as LoginResponse).token) {
         // Guarde o token (Bearer/Token) – backend usa DRF Token
-        localStorage.setItem('auth_token', resp.token);
+        localStorage.setItem('auth_token', (resp as LoginResponse).token);
         // Opcional: prefixo para header Authorization em chamadas futuras
         // Ex.: 'Token ' + token
         this.router.navigateByUrl('/pacientes');
       } else {
-        this.error = resp?.msg || 'Falha no login';
+        this.error = (resp as LoginResponse)?.msg || 'Falha no login';
       }
     } catch (e) {
       // DRF envia 401 com body {msg: 'Login ou Senha Inválidos.'}
@@ -97,7 +93,6 @@ export class AuthComponent {
     }
 
     try {
-      // TODO: integrar com backend
       await new Promise(r => setTimeout(r, 800));
       this.router.navigateByUrl('/pacientes');
     } catch (e) {

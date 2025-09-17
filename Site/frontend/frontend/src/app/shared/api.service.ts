@@ -5,13 +5,21 @@ import { Observable, catchError, throwError } from 'rxjs';
 export interface UploadAudioResponse { id: number; message: string; }
 export interface BatchTranscribeResponse { message: string; transcript: string; }
 export interface SummarizeResponse { summary: string; }
+export interface LoginResponse { token: string; msg?: string }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  // Ajuste se o backend expõe em outra origem/porta
   private baseUrl = 'http://127.0.0.1:8000/';
+  // TODO: mover baseUrl para environment.ts para alternar entre dev/prod
 
   constructor(private http: HttpClient) { }
+
+  login(username: string, password: string): Observable<LoginResponse> {
+    const body = { username, password };
+    return this.http
+      .post<LoginResponse>(`${this.baseUrl}doctor/token-auth/`, body)
+      .pipe(catchError(this.handleError));
+  }
 
   transcribeBatch(file: Blob | File): Observable<BatchTranscribeResponse> {
     const form = new FormData();
