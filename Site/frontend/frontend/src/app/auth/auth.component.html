@@ -19,8 +19,15 @@
     </form>
 
     <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
-      <label>Nome</label>
-      <input type="text" [(ngModel)]="signupName" name="signupName" required />
+      <!-- Required by backend: username, password, email, cpf, crm, specialty -->
+      <label>Usuário (username)</label>
+      <input type="text" [(ngModel)]="signupUsername" name="signupUsername" required />
+
+      <label>Primeiro nome</label>
+      <input type="text" [(ngModel)]="signupFirstName" name="signupFirstName" />
+
+      <label>Sobrenome</label>
+      <input type="text" [(ngModel)]="signupLastName" name="signupLastName" />
 
       <label>Email</label>
       <input type="email" [(ngModel)]="signupEmail" name="signupEmail" required />
@@ -30,6 +37,21 @@
 
       <label>Confirmar senha</label>
       <input type="password" [(ngModel)]="signupPasswordConfirm" name="signupPasswordConfirm" required />
+
+      <label>CPF</label>
+      <input type="text" [(ngModel)]="signupCpf" name="signupCpf" required />
+
+      <label>Telefone</label>
+      <input type="tel" [(ngModel)]="signupPhone" name="signupPhone" />
+
+      <label>Data de nascimento</label>
+      <input type="date" [(ngModel)]="signupDateOfBirth" name="signupDateOfBirth" />
+
+      <label>CRM</label>
+      <input type="text" [(ngModel)]="signupCrm" name="signupCrm" required />
+
+      <label>Especialidade (ID)</label>
+      <input type="number" [(ngModel)]="signupSpecialty" name="signupSpecialty" required />
 
       <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
     </form>
@@ -51,6 +73,7 @@
 
     <div class="status" *ngIf="mode!=='forgot'">
       <span *ngIf="isLoading">Processando...</span>
+      <span class="muted" *ngIf="!isLoading && success">{{ success }}</span>
       <span class="error" *ngIf="!isLoading && error">{{ error }}</span>
     </div>
   </div>

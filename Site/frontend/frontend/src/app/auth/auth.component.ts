@@ -23,6 +23,15 @@ export class AuthComponent {
   signupEmail = '';
   signupPassword = '';
   signupPasswordConfirm = '';
+  // Campos adicionais necessários para cadastro completo
+  signupUsername = '';
+  signupFirstName = '';
+  signupLastName = '';
+  signupCpf = '';
+  signupPhone = '';
+  signupDateOfBirth = '';
+  signupCrm = '';
+  signupSpecialty: number | null = null;
 
   forgotEmail = '';
   forgotMessage = '';
@@ -30,12 +39,14 @@ export class AuthComponent {
 
   isLoading = false;
   error = '';
+  success = '';
 
   constructor(private router: Router, private api: ApiService) { }
 
   switch(mode: 'login' | 'signup' | 'forgot') {
     this.mode = mode;
     this.error = '';
+    this.success = '';
     this.forgotMessage = '';
     this.forgotError = '';
   }
@@ -80,23 +91,50 @@ export class AuthComponent {
   async onSignup() {
     this.isLoading = true;
     this.error = '';
+
     if (this.signupPassword !== this.signupPasswordConfirm) {
       this.error = 'As senhas não coincidem.';
       this.isLoading = false;
       return;
     }
 
-    if (!this.signupName || !this.signupEmail || !this.signupPassword) {//|| !this.signupPasswordConfirm) {
-      this.error = 'Preencha todos os campos.';
+    // Validar obrigatórios conforme backend: username, password, email, cpf, crm, specialty
+    if (!this.signupUsername || !this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
+      this.error = 'Preencha todos os campos obrigatórios.';
       this.isLoading = false;
       return;
     }
 
     try {
-      await new Promise(r => setTimeout(r, 800));
-      this.router.navigateByUrl('/pacientes');
+      const { firstValueFrom } = await import('rxjs');
+      const resp = await firstValueFrom(
+        this.api.signup(
+          this.signupUsername,
+          this.signupPassword,
+          this.signupFirstName,
+          this.signupLastName,
+          this.signupEmail,
+          this.signupCpf,
+          this.signupDateOfBirth,
+          this.signupPhone,
+          this.signupCrm,
+          this.signupSpecialty ?? 0
+        )
+      );
+      // Sucesso no cadastro: mostrar mensagem por 2s antes de ir para login
+      this.error = '';
+      this.success = 'Cadastrado com sucesso';
+      setTimeout(() => {
+        this.success = '';
+        this.mode = 'login';
+      }, 2000);
     } catch (e) {
-      this.error = 'Falha no cadastro';
+      let msg = 'Falha no cadastro';
+      if (e && typeof e === 'object') {
+        const anyErr = e as { error?: any; message?: string };
+        msg = anyErr?.error?.msg || anyErr?.message || msg;
+      }
+      this.error = msg;
     } finally {
       this.isLoading = false;
     }
