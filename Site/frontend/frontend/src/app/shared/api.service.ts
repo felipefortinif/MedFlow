@@ -13,13 +13,6 @@ export class ApiService {
 
   constructor(private http: HttpClient) { }
 
-  uploadAudio(file: Blob | File): Observable<UploadAudioResponse> {
-    const form = new FormData();
-    form.append('audio', file, (file as File).name ?? 'audio.wav');
-    return this.http.post<UploadAudioResponse>(`${this.baseUrl}/audio/upload/`, form)
-      .pipe(catchError(this.handleError));
-  }
-
   transcribeBatch(file: Blob | File): Observable<BatchTranscribeResponse> {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
