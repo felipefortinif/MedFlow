@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 
 export interface UploadAudioResponse { id: number; message: string; }
@@ -7,6 +7,7 @@ export interface BatchTranscribeResponse { message: string; transcript: string; 
 export interface SummarizeResponse { summary: string; }
 export interface LoginResponse { token: string; msg?: string }
 export interface SignupResponse { message?: string; error?: any }
+export interface passwordResetResponse { message?: string; error?: any }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -42,13 +43,28 @@ export class ApiService {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
     return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}transcriber/api/transcribe/batch/`, form)
-      .pipe(catchError(this.handleError));
+    .pipe(catchError(this.handleError));
   }
-
+  
   summarizeTranscript(transcript: string, CSRFToken: string): Observable<SummarizeResponse> {
     const body = { transcript };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
     return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
+    .pipe(catchError(this.handleError));
+  }
+  
+  passwordReset(email: string): Observable<HttpResponse<passwordResetResponse>> {
+    const body = { email };
+    return this.http
+      .post<passwordResetResponse>(`${this.baseUrl}doctor/password_reset/`, body, { observe: 'response' })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Confirma a redefinição de senha usando o código recebido por e-mail
+  passwordResetConfirm(token: string, password: string): Observable<HttpResponse<any>> {
+    const body = { token, password };
+    return this.http
+      .post(`${this.baseUrl}doctor/password_reset/confirm/`, body, { observe: 'response' })
       .pipe(catchError(this.handleError));
   }
 

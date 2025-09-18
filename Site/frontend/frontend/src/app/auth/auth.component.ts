@@ -34,6 +34,9 @@ export class AuthComponent {
   signupSpecialty: number | null = null;
 
   forgotEmail = '';
+  forgotCode = '';
+  forgotNewPassword = '';
+  forgotConfirmPassword = '';
   forgotMessage = '';
   forgotError = '';
 
@@ -149,14 +152,93 @@ export class AuthComponent {
         this.forgotError = 'Informe o e-mail.';
         return;
       }
-      // TODO: substituir por chamada real ao backend (ex: ApiService.requestPasswordReset)
-      await new Promise(r => setTimeout(r, 800));
-      this.forgotMessage = 'Se o e-mail existir, você receberá instruções para resetar sua senha.';
-      this.forgotEmail = '';
+        const { firstValueFrom } = await import('rxjs');
+        const resp = await firstValueFrom(this.api.passwordReset(this.forgotEmail));
+        if (resp.status === 200) {
+          this.forgotMessage = 'Email enviado com sucesso';
+          this.forgotEmail = '';
+        }
     } catch (e) {
-      this.forgotError = 'Falha ao solicitar redefinição.';
+        // Pode retornar 400 se e-mail não existir
+        let msg = 'Falha ao solicitar redefinição.';
+        if (e && typeof e === 'object') {
+          const anyErr = e as { status?: number; error?: any; message?: string };
+          if (anyErr?.status === 400) {
+            msg = 'Email não encontrado';
+          } else {
+            msg = anyErr?.error?.detail || anyErr?.error?.msg || anyErr?.message || msg;
+          }
+        }
+        this.forgotError = msg;
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  async confirmPasswordReset() {
+    this.isLoading = true;
+    this.forgotMessage = '';
+    this.forgotError = '';
+    try {
+      if (!this.forgotEmail || !this.forgotCode || !this.forgotNewPassword || !this.forgotConfirmPassword) {
+        this.forgotError = 'Preencha todos os campos.';
+        return;
+      }
+      if (this.forgotNewPassword !== this.forgotConfirmPassword) {
+        this.forgotError = 'As senhas não coincidem.';
+        return;
+      }
+      const { firstValueFrom } = await import('rxjs');
+      const resp = await firstValueFrom(this.api.passwordResetConfirm(this.forgotCode, this.forgotNewPassword));
+      if (resp.status === 200) {
+        this.forgotMessage = 'Senha alterada com sucesso. Você já pode entrar com a nova senha.';
+        // Limpa os campos sensíveis
+        this.forgotCode = '';
+        this.forgotNewPassword = '';
+        this.forgotConfirmPassword = '';
+      } else {
+        this.forgotError = 'Não foi possível alterar a senha.';
+      }
+    } catch (e) {
+      this.forgotError = [
+        'A senha deve conter pelo menos 8 caracteres.',
+        'A senha não pode ser similar ao email.',
+        'A senha não pode ser muito comum.',
+        'A senha não pode ser inteiramente numérica'
+      ].join('\n');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // Tenta extrair uma mensagem útil vinda do backend (DRF/Django)
+  private extractBackendError(e: any): string {
+    try {
+      const err = (e && typeof e === 'object') ? (e.error ?? e) : e;
+      if (!err) return '';
+      if (typeof err === 'string') return err;
+      if (typeof err?.detail === 'string') return err.detail;
+      if (typeof err?.msg === 'string') return err.msg;
+      if (Array.isArray(err)) return err.join(' ');
+      if (typeof err === 'object') {
+        const preferredKeys = ['password', 'new_password', 'non_field_errors', 'token', 'email'];
+        const msgs: string[] = [];
+        for (const key of preferredKeys) {
+          const v = (err as any)[key];
+          if (!v) continue;
+          if (Array.isArray(v)) msgs.push(...v.map(String));
+          else if (typeof v === 'string') msgs.push(v);
+        }
+        for (const [k, v] of Object.entries(err)) {
+          if (preferredKeys.includes(k)) continue;
+          if (Array.isArray(v)) msgs.push(...v.map(String));
+          else if (typeof v === 'string') msgs.push(v);
+        }
+        return msgs.join(' ').trim();
+      }
+      return '';
+    } catch {
+      return '';
     }
   }
 }
