@@ -14,6 +14,8 @@ import { ApiService, LoginResponse } from '../shared/api.service';
 })
 export class AuthComponent {
   mode: 'login' | 'signup' | 'forgot' = 'login';
+  // fluxo de "forgot" em 3 etapas: 1-email, 2-token, 3-nova-senha
+  forgotStep: 1 | 2 | 3 = 1;
 
   // simples estado local; depois integre com backend
   loginEmail = '';
@@ -52,6 +54,9 @@ export class AuthComponent {
     this.success = '';
     this.forgotMessage = '';
     this.forgotError = '';
+    if (mode === 'forgot') {
+      this.forgotStep = 1; // sempre iniciar na etapa 1
+    }
   }
 
   async onLogin() {
@@ -143,6 +148,7 @@ export class AuthComponent {
     }
   }
 
+  // Etapa 1: enviar email
   async sendPasswordReset() {
     this.isLoading = true;
     this.forgotMessage = '';
@@ -155,8 +161,10 @@ export class AuthComponent {
         const { firstValueFrom } = await import('rxjs');
         const resp = await firstValueFrom(this.api.passwordReset(this.forgotEmail));
         if (resp.status === 200) {
-          this.forgotMessage = 'Email enviado com sucesso';
-          this.forgotEmail = '';
+          this.forgotMessage = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
+          // guarda o email para referência (não limpar ainda)
+          sessionStorage.setItem('reset_email', this.forgotEmail);
+          this.forgotStep = 2; // avançar para etapa de token
         }
     } catch (e) {
         // Pode retornar 400 se e-mail não existir
@@ -175,12 +183,45 @@ export class AuthComponent {
     }
   }
 
+  // Etapa 2: validar token
+  async validateResetToken() {
+    this.isLoading = true;
+    this.forgotMessage = '';
+    this.forgotError = '';
+    try {
+      if (!this.forgotCode) {
+        this.forgotError = 'Informe o token recebido por e-mail.';
+        return;
+      }
+      const { firstValueFrom } = await import('rxjs');
+      const resp = await firstValueFrom(this.api.passwordResetValidate(this.forgotCode));
+      if (resp.status === 200) {
+        const valid = (resp.body as any)?.valid;
+        if (valid === false) {
+          this.forgotError = (resp.body as any)?.message || 'Token inválido ou expirado.';
+        } else {
+          // guarda token
+          sessionStorage.setItem('reset_token', this.forgotCode);
+          this.forgotMessage = 'Token validado com sucesso.';
+          this.forgotStep = 3; // avança para nova senha
+        }
+      } else {
+        this.forgotError = 'Não foi possível validar o token.';
+      }
+    } catch (e: any) {
+      this.forgotError = e?.error?.detail || e?.message || 'Falha ao validar token';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // Etapa 3: confirmar nova senha
   async confirmPasswordReset() {
     this.isLoading = true;
     this.forgotMessage = '';
     this.forgotError = '';
     try {
-      if (!this.forgotEmail || !this.forgotCode || !this.forgotNewPassword || !this.forgotConfirmPassword) {
+      if (!this.forgotNewPassword || !this.forgotConfirmPassword) {
         this.forgotError = 'Preencha todos os campos.';
         return;
       }
@@ -189,23 +230,23 @@ export class AuthComponent {
         return;
       }
       const { firstValueFrom } = await import('rxjs');
-      const resp = await firstValueFrom(this.api.passwordResetConfirm(this.forgotCode, this.forgotNewPassword));
+      const token = sessionStorage.getItem('reset_token') || this.forgotCode;
+      const resp = await firstValueFrom(this.api.passwordResetConfirm(token, this.forgotNewPassword));
       if (resp.status === 200) {
         this.forgotMessage = 'Senha alterada com sucesso. Você já pode entrar com a nova senha.';
         // Limpa os campos sensíveis
         this.forgotCode = '';
         this.forgotNewPassword = '';
         this.forgotConfirmPassword = '';
+        sessionStorage.removeItem('reset_token');
+        // Opcional: voltar para tela de login automaticamente
+        setTimeout(() => this.switch('login'), 1200);
       } else {
         this.forgotError = 'Não foi possível alterar a senha.';
       }
     } catch (e) {
-      this.forgotError = [
-        'A senha deve conter pelo menos 8 caracteres.',
-        'A senha não pode ser similar ao email.',
-        'A senha não pode ser muito comum.',
-        'A senha não pode ser inteiramente numérica'
-      ].join('\n');
+      // Mostra mensagem real do backend (ex.: validações de senha)
+      this.forgotError = this.extractBackendError(e) || 'Não foi possível alterar a senha.';
     } finally {
       this.isLoading = false;
     }

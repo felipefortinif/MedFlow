@@ -8,6 +8,7 @@ export interface SummarizeResponse { summary: string; }
 export interface LoginResponse { token: string; msg?: string }
 export interface SignupResponse { message?: string; error?: any }
 export interface passwordResetResponse { message?: string; error?: any }
+export interface PasswordResetValidateResponse { valid: boolean; message?: string }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -57,6 +58,14 @@ export class ApiService {
     const body = { email };
     return this.http
       .post<passwordResetResponse>(`${this.baseUrl}doctor/password_reset/`, body, { observe: 'response' })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Valida o token de redefinição de senha recebido por e-mail
+  passwordResetValidate(token: string): Observable<HttpResponse<PasswordResetValidateResponse>> {
+    const body = { token };
+    return this.http
+      .post<PasswordResetValidateResponse>(`${this.baseUrl}doctor/password_reset/validate_token/`, body, { observe: 'response' })
       .pipe(catchError(this.handleError));
   }
 

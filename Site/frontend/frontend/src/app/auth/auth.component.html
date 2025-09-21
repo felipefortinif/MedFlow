@@ -5,7 +5,7 @@
       <button type="button" class="tab" [class.active]="mode==='signup'" (click)="switch('signup')">Cadastrar</button>
     </div>
 
-    <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
+  <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
       <label>Email</label>
       <input type="email" [(ngModel)]="loginEmail" name="loginEmail" required />
 
@@ -17,6 +17,48 @@
         <a class="link" (click)="switch('forgot')">Esqueci minha senha</a>
       </div>
     </form>
+
+    <!-- Fluxo de redefinição em 3 etapas dentro do AuthComponent -->
+    <div *ngIf="mode==='forgot'">
+      <!-- Etapa 1: solicitar email -->
+      <form *ngIf="forgotStep===1" (ngSubmit)="sendPasswordReset()">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading || !forgotEmail">Enviar código</button>
+          <a class="link" (click)="switch('login')">Voltar</a>
+        </div>
+      </form>
+
+      <!-- Etapa 2: validar token -->
+      <form *ngIf="forgotStep===2" (ngSubmit)="validateResetToken()">
+        <p class="muted">Enviamos um token para {{ forgotEmail || 'seu e-mail' }}. Digite abaixo para validar.</p>
+        <label>Token</label>
+        <input type="text" [(ngModel)]="forgotCode" name="forgotCode" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading || !forgotCode">Validar token</button>
+          <a class="link" (click)="forgotStep=1">Alterar e-mail</a>
+        </div>
+      </form>
+
+      <!-- Etapa 3: nova senha -->
+      <form *ngIf="forgotStep===3" (ngSubmit)="confirmPasswordReset()">
+        <label>Nova senha</label>
+        <input type="password" [(ngModel)]="forgotNewPassword" name="forgotNewPassword" required />
+        <label>Confirmar nova senha</label>
+        <input type="password" [(ngModel)]="forgotConfirmPassword" name="forgotConfirmPassword" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading">Confirmar</button>
+          <a class="link" (click)="forgotStep=2">Voltar</a>
+        </div>
+      </form>
+
+      <div class="status" style="margin-top:10px;">
+        <span *ngIf="isLoading">Processando...</span>
+        <span class="muted" *ngIf="!isLoading && forgotMessage">{{ forgotMessage }}</span>
+        <span class="error" *ngIf="!isLoading && forgotError">{{ forgotError }}</span>
+      </div>
+    </div>
 
     <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
       <!-- Required by backend: username, password, email, cpf, crm, specialty -->
@@ -56,39 +98,7 @@
       <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
     </form>
 
-    <form *ngIf="mode==='forgot'" (ngSubmit)="confirmPasswordReset()">
-      <div style="display:flex; gap:8px; align-items:flex-end;">
-        <div style="flex:1;">
-          <label>Email</label>
-          <input type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
-        </div>
-        <div>
-          <button type="button" class="secondary" (click)="sendPasswordReset()" [disabled]="isLoading || !forgotEmail">
-            Enviar código
-          </button>
-        </div>
-      </div>
-
-      <label style="margin-top:8px;">Código</label>
-      <input type="text" [(ngModel)]="forgotCode" name="forgotCode" required />
-
-      <label>Nova senha</label>
-      <input type="password" [(ngModel)]="forgotNewPassword" name="forgotNewPassword" required />
-
-      <label>Confirmar nova senha</label>
-      <input type="password" [(ngModel)]="forgotConfirmPassword" name="forgotConfirmPassword" required />
-
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-        <button class="primary" type="submit" [disabled]="isLoading">Confirmar</button>
-        <a class="link" (click)="switch('login')">Voltar</a>
-      </div>
-
-      <div class="status" style="margin-top:10px;">
-        <span *ngIf="isLoading">Processando...</span>
-        <span class="muted" *ngIf="!isLoading && forgotMessage">{{ forgotMessage }}</span>
-        <span class="error" *ngIf="!isLoading && forgotError">{{ forgotError }}</span>
-      </div>
-    </form>
+    
 
     <div class="status" *ngIf="mode!=='forgot'">
       <span *ngIf="isLoading">Processando...</span>
