@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { ApiService, LoginResponse } from '../shared/api.service';
 
@@ -46,7 +46,15 @@ export class AuthComponent {
   error = '';
   success = '';
 
-  constructor(private router: Router, private api: ApiService) { }
+  private returnUrl: string | null = null;
+
+  constructor(private router: Router, private route: ActivatedRoute, private api: ApiService) {
+    // capture returnUrl if present
+    this.route.queryParamMap.subscribe(q => {
+      const r = q.get('returnUrl');
+      this.returnUrl = r && r !== '/login' ? r : null;
+    });
+  }
 
   switch(mode: 'login' | 'signup' | 'forgot') {
     this.mode = mode;
@@ -79,7 +87,8 @@ export class AuthComponent {
         localStorage.setItem('auth_token', (resp as LoginResponse).token);
         // Opcional: prefixo para header Authorization em chamadas futuras
         // Ex.: 'Token ' + token
-        this.router.navigateByUrl('/pacientes');
+        const target = this.returnUrl || '/pacientes';
+        this.router.navigateByUrl(target);
       } else {
         this.error = (resp as LoginResponse)?.msg || 'Falha no login';
       }
