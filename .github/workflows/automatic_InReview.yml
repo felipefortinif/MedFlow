@@ -14,3 +14,5 @@ jobs:
           project-url: https://github.com/orgs/FAT-ENTERPRISES/projects/2
           github-token: ${{ secrets.GITHUB_TOKEN }}
           status: "In review"
+permissions:
+  repository-projects: write
