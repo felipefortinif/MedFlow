@@ -1,0 +1,16 @@
+name: Move PR to In Review
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  move-to-in-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issue to "In review"
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/FAT-ENTERPRISES/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          status: "In review"
