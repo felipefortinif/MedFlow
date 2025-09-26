@@ -1,22 +1,42 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 
 export interface UploadAudioResponse { id: number; message: string; }
 export interface BatchTranscribeResponse { message: string; transcript: string; }
 export interface SummarizeResponse { summary: string; }
+export interface LoginResponse { token: string; msg?: string }
+export interface SignupResponse { message?: string; error?: any }
+export interface passwordResetResponse { message?: string; error?: any }
+export interface PasswordResetValidateResponse { valid: boolean; message?: string }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  // Ajuste se o backend expõe em outra origem/porta
   private baseUrl = 'http://127.0.0.1:8000/';
+  // TODO: mover baseUrl para environment.ts para alternar entre dev/prod
 
   constructor(private http: HttpClient) { }
 
-  uploadAudio(file: Blob | File): Observable<UploadAudioResponse> {
-    const form = new FormData();
-    form.append('audio', file, (file as File).name ?? 'audio.wav');
-    return this.http.post<UploadAudioResponse>(`${this.baseUrl}/audio/upload/`, form)
+  login(username: string, password: string): Observable<LoginResponse> {
+    const body = { username, password };
+    return this.http
+      .post<LoginResponse>(`${this.baseUrl}doctor/token-auth/`, body)
+      .pipe(catchError(this.handleError));
+  }
+
+  signup(username: string,
+    password: string,
+    first_name: string, 
+    last_name: string,
+    email: string,
+    cpf: string,
+    date_of_birth: string,
+    phone: string,
+    crm: string,
+    specialty: number): Observable<SignupResponse> {
+    const body = { username, password, first_name, last_name, email, cpf, date_of_birth, phone, crm, specialty };
+    return this.http
+      .post<SignupResponse>(`${this.baseUrl}doctor/account/`, body)
       .pipe(catchError(this.handleError));
   }
 
@@ -24,13 +44,36 @@ export class ApiService {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
     return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}transcriber/api/transcribe/batch/`, form)
-      .pipe(catchError(this.handleError));
+    .pipe(catchError(this.handleError));
   }
-
+  
   summarizeTranscript(transcript: string, CSRFToken: string): Observable<SummarizeResponse> {
     const body = { transcript };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
     return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
+    .pipe(catchError(this.handleError));
+  }
+  
+  passwordReset(email: string): Observable<HttpResponse<passwordResetResponse>> {
+    const body = { email };
+    return this.http
+      .post<passwordResetResponse>(`${this.baseUrl}doctor/password_reset/`, body, { observe: 'response' })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Valida o token de redefinição de senha recebido por e-mail
+  passwordResetValidate(token: string): Observable<HttpResponse<PasswordResetValidateResponse>> {
+    const body = { token };
+    return this.http
+      .post<PasswordResetValidateResponse>(`${this.baseUrl}doctor/password_reset/validate_token/`, body, { observe: 'response' })
+      .pipe(catchError(this.handleError));
+  }
+
+  // Confirma a redefinição de senha usando o código recebido por e-mail
+  passwordResetConfirm(token: string, password: string): Observable<HttpResponse<any>> {
+    const body = { token, password };
+    return this.http
+      .post(`${this.baseUrl}doctor/password_reset/confirm/`, body, { observe: 'response' })
       .pipe(catchError(this.handleError));
   }
 

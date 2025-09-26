@@ -5,7 +5,7 @@
       <button type="button" class="tab" [class.active]="mode==='signup'" (click)="switch('signup')">Cadastrar</button>
     </div>
 
-    <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
+  <form *ngIf="mode==='login'" (ngSubmit)="onLogin()">
       <label>Email</label>
       <input type="email" [(ngModel)]="loginEmail" name="loginEmail" required />
 
@@ -18,9 +18,58 @@
       </div>
     </form>
 
+    <!-- Fluxo de redefinição em 3 etapas dentro do AuthComponent -->
+    <div *ngIf="mode==='forgot'">
+      <!-- Etapa 1: solicitar email -->
+      <form *ngIf="forgotStep===1" (ngSubmit)="sendPasswordReset()">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading || !forgotEmail">Enviar código</button>
+          <a class="link" (click)="switch('login')">Voltar</a>
+        </div>
+      </form>
+
+      <!-- Etapa 2: validar token -->
+      <form *ngIf="forgotStep===2" (ngSubmit)="validateResetToken()">
+        <p class="muted">Enviamos um token para {{ forgotEmail || 'seu e-mail' }}. Digite abaixo para validar.</p>
+        <label>Token</label>
+        <input type="text" [(ngModel)]="forgotCode" name="forgotCode" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading || !forgotCode">Validar token</button>
+          <a class="link" (click)="forgotStep=1">Alterar e-mail</a>
+        </div>
+      </form>
+
+      <!-- Etapa 3: nova senha -->
+      <form *ngIf="forgotStep===3" (ngSubmit)="confirmPasswordReset()">
+        <label>Nova senha</label>
+        <input type="password" [(ngModel)]="forgotNewPassword" name="forgotNewPassword" required />
+        <label>Confirmar nova senha</label>
+        <input type="password" [(ngModel)]="forgotConfirmPassword" name="forgotConfirmPassword" required />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <button type="submit" class="primary" [disabled]="isLoading">Confirmar</button>
+          <a class="link" (click)="forgotStep=2">Voltar</a>
+        </div>
+      </form>
+
+      <div class="status" style="margin-top:10px;">
+        <span *ngIf="isLoading">Processando...</span>
+        <span class="muted" *ngIf="!isLoading && forgotMessage">{{ forgotMessage }}</span>
+        <span class="error" *ngIf="!isLoading && forgotError">{{ forgotError }}</span>
+      </div>
+    </div>
+
     <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
-      <label>Nome</label>
-      <input type="text" [(ngModel)]="signupName" name="signupName" required />
+      <!-- Required by backend: username, password, email, cpf, crm, specialty -->
+      <label>Usuário (username)</label>
+      <input type="text" [(ngModel)]="signupUsername" name="signupUsername" required />
+
+      <label>Primeiro nome</label>
+      <input type="text" [(ngModel)]="signupFirstName" name="signupFirstName" />
+
+      <label>Sobrenome</label>
+      <input type="text" [(ngModel)]="signupLastName" name="signupLastName" />
 
       <label>Email</label>
       <input type="email" [(ngModel)]="signupEmail" name="signupEmail" required />
@@ -31,26 +80,29 @@
       <label>Confirmar senha</label>
       <input type="password" [(ngModel)]="signupPasswordConfirm" name="signupPasswordConfirm" required />
 
+      <label>CPF</label>
+      <input type="text" [(ngModel)]="signupCpf" name="signupCpf" required />
+
+      <label>Telefone</label>
+      <input type="tel" [(ngModel)]="signupPhone" name="signupPhone" />
+
+      <label>Data de nascimento</label>
+      <input type="date" [(ngModel)]="signupDateOfBirth" name="signupDateOfBirth" />
+
+      <label>CRM</label>
+      <input type="text" [(ngModel)]="signupCrm" name="signupCrm" required />
+
+      <label>Especialidade (ID)</label>
+      <input type="number" [(ngModel)]="signupSpecialty" name="signupSpecialty" required />
+
       <button class="primary" type="submit" [disabled]="isLoading">Cadastrar</button>
     </form>
 
-    <form *ngIf="mode==='forgot'" (ngSubmit)="sendPasswordReset()">
-      <label>Informe seu e-mail</label>
-      <input type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-        <button class="primary" type="submit" [disabled]="isLoading">Enviar</button>
-        <a class="link" (click)="switch('login')">Voltar</a>
-      </div>
-
-      <div class="status" style="margin-top:10px;">
-        <span *ngIf="isLoading">Enviando...</span>
-        <span class="muted" *ngIf="!isLoading && forgotMessage">{{ forgotMessage }}</span>
-        <span class="error" *ngIf="!isLoading && forgotError">{{ forgotError }}</span>
-      </div>
-    </form>
+    
 
     <div class="status" *ngIf="mode!=='forgot'">
       <span *ngIf="isLoading">Processando...</span>
+      <span class="muted" *ngIf="!isLoading && success">{{ success }}</span>
       <span class="error" *ngIf="!isLoading && error">{{ error }}</span>
     </div>
   </div>
