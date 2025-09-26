@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { ApiService, LoginResponse } from '../shared/api.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-auth',
@@ -78,7 +79,7 @@ export class AuthComponent {
     }
 
     try {
-      const resp = await (await import('rxjs')).firstValueFrom(
+      const resp = await firstValueFrom(
         this.api.login(this.loginEmail, this.loginPassword)
       );
 
@@ -123,7 +124,6 @@ export class AuthComponent {
     }
 
     try {
-      const { firstValueFrom } = await import('rxjs');
       const resp = await firstValueFrom(
         this.api.signup(
           this.signupUsername,
@@ -167,7 +167,6 @@ export class AuthComponent {
         this.forgotError = 'Informe o e-mail.';
         return;
       }
-        const { firstValueFrom } = await import('rxjs');
         const resp = await firstValueFrom(this.api.passwordReset(this.forgotEmail));
         if (resp.status === 200) {
           this.forgotMessage = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
@@ -202,7 +201,6 @@ export class AuthComponent {
         this.forgotError = 'Informe o token recebido por e-mail.';
         return;
       }
-      const { firstValueFrom } = await import('rxjs');
       const resp = await firstValueFrom(this.api.passwordResetValidate(this.forgotCode));
       if (resp.status === 200) {
         const valid = (resp.body as any)?.valid;
@@ -238,7 +236,6 @@ export class AuthComponent {
         this.forgotError = 'As senhas não coincidem.';
         return;
       }
-      const { firstValueFrom } = await import('rxjs');
       const token = sessionStorage.getItem('reset_token') || this.forgotCode;
       const resp = await firstValueFrom(this.api.passwordResetConfirm(token, this.forgotNewPassword));
       if (resp.status === 200) {
