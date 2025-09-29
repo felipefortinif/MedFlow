@@ -70,6 +70,8 @@ class SummarizeTranscriptAPIView(APIView):
         - Onde fizer sentido (listas de doenças, cirurgias, medicações), use itens com "- ".
         - Não inclua seções extras nem comentários sobre seu raciocínio.
         - Se houver datas, mantenha-as como foram ditas; se unidades forem mencionadas, preserve-as.
+        - Use termos médicos sempre que possível.
+        - Use abreviações comuns (ex.: HAS, DM2, DPOC) quando apropriado.
 
         TÓPICOS (ordem e títulos EXATOS abaixo)
         1) Nome
@@ -98,7 +100,7 @@ class SummarizeTranscriptAPIView(APIView):
         <preencha aqui ou "Não informado">
 
         ### Indicação(medico que indicou)
-        <preencha aqui ou "Não informado">
+        <preencha aqui, use "Dr. Nome" ou "Não informado">
 
         ### Queixa principal
         <preencha aqui ou "Não informado">
