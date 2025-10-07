@@ -180,12 +180,11 @@ export class AuthComponent {
         if (e && typeof e === 'object') {
           const anyErr = e as { status?: number; error?: any; message?: string };
           if (anyErr?.status === 400) {
-            msg = 'Email não encontrado';
-          } else {
-            msg = anyErr?.error?.detail || anyErr?.error?.msg || anyErr?.message || msg;
-          }
+            msg = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
+          } 
+          this.forgotStep = 2; // avançar para etapa de token
         }
-        this.forgotError = msg;
+        this.forgotMessage = msg;
     } finally {
       this.isLoading = false;
     }
@@ -205,7 +204,7 @@ export class AuthComponent {
       if (resp.status === 200) {
         const valid = (resp.body as any)?.valid;
         if (valid === false) {
-          this.forgotError = (resp.body as any)?.message || 'Token inválido ou expirado.';
+          this.forgotError = 'Falha ao validar token.';
         } else {
           // guarda token
           sessionStorage.setItem('reset_token', this.forgotCode);
@@ -213,10 +212,10 @@ export class AuthComponent {
           this.forgotStep = 3; // avança para nova senha
         }
       } else {
-        this.forgotError = 'Não foi possível validar o token.';
+        this.forgotError = 'Falha ao validar token.';
       }
     } catch (e: any) {
-      this.forgotError = e?.error?.detail || e?.message || 'Falha ao validar token';
+      this.forgotError =  'Falha ao validar token.';
     } finally {
       this.isLoading = false;
     }
@@ -252,40 +251,9 @@ export class AuthComponent {
       }
     } catch (e) {
       // Mostra mensagem real do backend (ex.: validações de senha)
-      this.forgotError = this.extractBackendError(e) || 'Não foi possível alterar a senha.';
+      this.forgotError = 'Não foi possível alterar a senha.';
     } finally {
       this.isLoading = false;
-    }
-  }
-
-  // Tenta extrair uma mensagem útil vinda do backend (DRF/Django)
-  private extractBackendError(e: any): string {
-    try {
-      const err = (e && typeof e === 'object') ? (e.error ?? e) : e;
-      if (!err) return '';
-      if (typeof err === 'string') return err;
-      if (typeof err?.detail === 'string') return err.detail;
-      if (typeof err?.msg === 'string') return err.msg;
-      if (Array.isArray(err)) return err.join(' ');
-      if (typeof err === 'object') {
-        const preferredKeys = ['password', 'new_password', 'non_field_errors', 'token', 'email'];
-        const msgs: string[] = [];
-        for (const key of preferredKeys) {
-          const v = (err as any)[key];
-          if (!v) continue;
-          if (Array.isArray(v)) msgs.push(...v.map(String));
-          else if (typeof v === 'string') msgs.push(v);
-        }
-        for (const [k, v] of Object.entries(err)) {
-          if (preferredKeys.includes(k)) continue;
-          if (Array.isArray(v)) msgs.push(...v.map(String));
-          else if (typeof v === 'string') msgs.push(v);
-        }
-        return msgs.join(' ').trim();
-      }
-      return '';
-    } catch {
-      return '';
     }
   }
 }
