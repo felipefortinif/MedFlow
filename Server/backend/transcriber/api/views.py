@@ -109,7 +109,7 @@ class AudioBatchUploadAPIView(APIView):
             return Response({'transcript': transcript}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.exception("Erro ao transcrever batch: %s", e)
-            return Response({'error': f'Erro interno na transcrição: {e.__class__.__name__}: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Erro interno na transcrição. Se o problema persistir entre em contato com a nossa equipe.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             # Remove o temp file manualmente para não acumular lixo
             if tmp_path and os.path.exists(tmp_path):
