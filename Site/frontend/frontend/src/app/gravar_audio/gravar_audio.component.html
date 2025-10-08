@@ -17,17 +17,21 @@
 
     <button
       class="record-btn"
-      *ngIf="showGenerate"
+      *ngIf="showGenerate && !isSummarizing"
       (click)="generateProntuario()"
-      [disabled]="!canSummarize || isSummarizing"
+      [disabled]="!canSummarize"
     >
-      <ng-container *ngIf="!isSummarizing; else generatingLabel">📝 Gerar Prontuário</ng-container>
+      📝 Gerar Prontuário
     </button>
-    <ng-template #generatingLabel>⏳ Gerando...</ng-template>
 
     <div class="summary" *ngIf="summaryHtml || isSummarizing">
       <h3>Prontuário gerado:</h3>
-      <div *ngIf="isSummarizing" class="summary-loading">Gerando prontuário...</div>
+      <div *ngIf="isSummarizing" class="summary-loading">
+        Gerando prontuário
+        <span class="dot dot-1">.</span>
+        <span class="dot dot-2">.</span>
+        <span class="dot dot-3">.</span>
+      </div>
       <div *ngIf="!isSummarizing && summaryHtml" class="summary-content" [innerHTML]="summaryHtml"></div>
     </div>
   </div>

@@ -6,3 +6,11 @@
 .summary { margin-top: 24px; border-top: 1px solid #ddd; padding-top: 16px; }
 .summary-content { margin-top: 12px; border: 1px solid #ccc; padding: 12px; background: #fafafa; border-radius: 4px; }
 .summary-loading { margin-top: 12px; color: #0070f3; font-style: italic; }
+.summary-loading .dot { display: inline-block; animation: blink 1.2s infinite; }
+.summary-loading .dot-2 { animation-delay: 0.4s; }
+.summary-loading .dot-3 { animation-delay: 0.8s; }
+
+@keyframes blink {
+	0%, 20% { opacity: 0; }
+	30%, 100% { opacity: 1; }
+}

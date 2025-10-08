@@ -261,6 +261,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     if (this.isRecording && !this.stopRequested) {
       this.stopRecording();
     }
+    this.showGenerate = false;
     this.isSummarizing = true;
     this.status = 'Gerando prontuário...';
     this.summaryHtml = '';
