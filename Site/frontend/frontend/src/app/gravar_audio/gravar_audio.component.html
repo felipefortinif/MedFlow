@@ -1,6 +1,19 @@
-<div class="screen">
+<div class="page">
+  <div class="screen">
   <div class="topbar">
-    <h1>Paciente: {{ patientName }}</h1>
+    <div class="heading">
+      <nav class="breadcrumbs">
+        <a routerLink="/pacientes">Pacientes</a>
+        <span>/</span>
+        <span>{{ patientName }}</span>
+      </nav>
+      <h1>Paciente: {{ patientName }}</h1>
+      <p class="subhead" *ngIf="patientCpf || patientNascimento">
+        <span *ngIf="patientCpf">CPF: {{ patientCpf }}</span>
+        <span *ngIf="patientCpf && patientNascimento" class="separator">•</span>
+        <span *ngIf="patientNascimento">Nascimento: {{ patientNascimento }}</span>
+      </p>
+    </div>
     <a class="ghost-btn" routerLink="/pacientes">← Voltar ao início</a>
   </div>
 
@@ -17,7 +30,12 @@
       </div>
       <div class="meta-row">
         <span class="label">Status</span>
-        <span class="value">{{ status }}</span>
+        <span class="value">
+          <span class="status-chip" [ngClass]="statusChip.class">
+            <span class="chip-icon">{{ statusChip.icon }}</span>
+            <span class="chip-label">{{ statusChip.label }}</span>
+          </span>
+        </span>
       </div>
       <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
         ⬇️ Exportar prontuário
@@ -25,15 +43,19 @@
     </aside>
 
     <section class="record-area">
-      <div class="status-badge" [class.recording]="isRecording" [class.processing]="isProcessingFinal" [class.idle]="!isRecording && !isProcessingFinal && !isSummarizing">
-        {{ status }}
+      <div class="status-badge" [ngClass]="statusChip.class">
+        <span class="chip-icon">{{ statusChip.icon }}</span>
+        <span class="chip-label">{{ statusChip.label }}</span>
+        <small class="chip-note">{{ status }}</small>
       </div>
 
       <div class="voice-visual" [class.recording]="isRecording">
         <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
         <div class="voice-icon">🎙️</div>
-  <div class="voice-caption" *ngIf="isRecording && !isProcessingFinal">Escutando...</div>
-  <div class="voice-caption" *ngIf="isProcessingFinal">Processando áudio...</div>
+      </div>
+
+      <div class="recording-timer" *ngIf="isRecording || recordingDuration > 0">
+        ⏱️ Duração: <span>{{ recordingDurationLabel }}</span>
       </div>
 
       <div class="controls">
@@ -62,5 +84,6 @@
         <div *ngIf="!isSummarizing && !summaryHtml" class="summary-empty">Nenhum prontuário disponível no momento.</div>
       </section>
     </section>
+  </div>
   </div>
 </div>

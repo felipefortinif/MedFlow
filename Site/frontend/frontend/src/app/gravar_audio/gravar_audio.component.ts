@@ -24,6 +24,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   voiceScale = 1;
   sessionStartedAt: Date | null = null;
   lastSummaryRaw = '';
+  recordingDuration = 0;
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -45,6 +46,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private analyser: AnalyserNode | null = null;
   private analyserData: Uint8Array<ArrayBuffer> | null = null;
   private analyserFrame: number | null = null;
+  private recordingTicker: ReturnType<typeof setInterval> | null = null;
 
   // Dados
   private fullTranscript = '';
@@ -67,10 +69,25 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     }
     this.flushFinalBatch();
     this.stopStream();
+    this.stopRecordingTimer();
   }
 
   get patientName(): string {
     return this.state.paciente()?.nome ?? 'Paciente';
+  }
+
+  get patientCpf(): string | null {
+    return this.state.paciente()?.cpf ?? null;
+  }
+
+  get patientNascimento(): string | null {
+    const nascimento = this.state.paciente()?.nascimento;
+    if (!nascimento) return null;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(nascimento));
+    } catch {
+      return nascimento;
+    }
   }
 
   get sessionStartedLabel(): string | null {
@@ -79,6 +96,25 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(this.sessionStartedAt);
+  }
+
+  get statusChip() {
+    if (this.isRecording) {
+      return { label: 'Gravando', icon: '🔴', class: 'recording' } as const;
+    }
+    if (this.isProcessingFinal || this.isSummarizing) {
+      return { label: 'Processando', icon: '⏳', class: 'processing' } as const;
+    }
+    if (this.lastSummaryRaw) {
+      return { label: 'Prontuário gerado', icon: '✔️', class: 'success' } as const;
+    }
+    return { label: 'Pronto para gravar', icon: '🟢', class: 'idle' } as const;
+  }
+
+  get recordingDurationLabel(): string {
+    const minutes = Math.floor(this.recordingDuration / 60).toString().padStart(2, '0');
+    const seconds = (this.recordingDuration % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
   }
 
   startRecording(): void {
@@ -97,6 +133,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.timedChunks = [];
         this.lastBatchSentAt = null;
         this.sessionStartedAt = new Date();
+        this.recordingDuration = 0;
+        this.startRecordingTimer();
 
         this.stream = stream;
         this.startVoiceVisualizer(stream);
@@ -116,6 +154,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.status = 'Processando áudio...';
     this.clearBatchScheduler();
     this.stopVoiceVisualizer();
+    this.stopRecordingTimer();
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try { this.mediaRecorder.stop(); } catch { }
     }
@@ -189,6 +228,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.isRecording = false;
       this.status = 'Gravação finalizada.';
       this.stopStream();
+      this.stopRecordingTimer();
     };
 
     try {
@@ -240,6 +280,21 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stream = null;
     }
     this.stopVoiceVisualizer();
+  }
+
+  private startRecordingTimer() {
+    this.stopRecordingTimer();
+    this.recordingTicker = setInterval(() => {
+      this.recordingDuration += 1;
+      try { this.cdr.detectChanges(); } catch { }
+    }, 1000);
+  }
+
+  private stopRecordingTimer() {
+    if (this.recordingTicker) {
+      clearInterval(this.recordingTicker);
+      this.recordingTicker = null;
+    }
   }
 
   private startVoiceVisualizer(stream: MediaStream) {
