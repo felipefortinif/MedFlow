@@ -1,12 +1,19 @@
 from rest_framework import serializers
-from prontuarios.models import Prognostics
+from prontuarios.models import Prontuarios
 
 
-class PrognosticsSerializer(serializers.ModelSerializer):
+class ProntuariosSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Prognostics
+        model = Prontuarios
         fields = [
             'doctor',
             'patient',
-            'prognostic',
+            'prontuarios',
         ]
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get("include_created_at"):
+            # works for model fields or computed values
+            data["created_at"] = instance.created_at
+        return data

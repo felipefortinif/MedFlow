@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "transcriber.apps.TranscriberConfig",
     "summerize.apps.SummerizeConfig",
+    "prontuarios.apps.ProntuariosConfig",
 ]
 
 MIDDLEWARE = [

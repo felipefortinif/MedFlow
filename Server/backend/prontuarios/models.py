@@ -1,26 +1,26 @@
 from django.db import models
 from django.conf import settings
-from backend.doctor.models import Patients
+from doctor.models import Patients
 
 # Create your models here.
-class Prognostics(models.Model):
-    doctor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='prognostics', on_delete=models.CASCADE, blank=False)
+class Prontuarios(models.Model):
+    doctor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='prontuarios', on_delete=models.CASCADE, blank=False)
     patient = models.ForeignKey(Patients, on_delete=models.CASCADE, blank=False)
-    prognostic = models.TextField(blank=True)
+    prontuarios = models.TextField(blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Prognostic'
-        verbose_name_plural = 'Prognostics'
-        ordering = ['prognostic']
+        verbose_name = 'Prontuario'
+        verbose_name_plural = 'Prontuarios'
+        ordering = ['prontuarios']
         indexes = [
             models.Index(fields=['doctor']),
             models.Index(fields=['patient']),
-            models.Index(fields=['-updated_at']),
-            models.Index(fields=['prognostic']),
+            models.Index(fields=['prontuarios']),
         ]
         
         
     def __str__(self):
-        return self.prognostic
+        
+        rpr = "prontuarios of Dr. " + self.doctor.username + " for patient " + self.patient.name + ": "
+        return rpr + self.prontuarios

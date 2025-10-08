@@ -22,6 +22,9 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
 
 class PatientsSerializer(serializers.ModelSerializer):
     doctor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    email = serializers.EmailField(required=False, allow_blank=True)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
     class Meta:
         model = Patients
         fields = [
