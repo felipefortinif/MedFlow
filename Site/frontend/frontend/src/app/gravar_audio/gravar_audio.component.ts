@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { StateService } from '../shared/state.service';
-import { SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../shared/api.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -19,7 +20,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   showGenerate = false;
   canSummarize = false;
   summaryHtml: SafeHtml = '';
-  statusText = '';
+  isSummarizing = false;
   backendUrl = 'http://127.0.0.1:8000/';
 
   // Gravação em batches
@@ -37,12 +38,16 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private readonly chunkTimeslice = 1000; // intervalo de emissão de ondataavailable (ms)
   private lastBatchSentAt: number | null = null;
   private finalBatchSent = false; // evita envios duplicados após parada
-  private navigating = false; // evita atividade durante navegação
 
   // Dados
   private fullTranscript = '';
 
-  constructor(private state: StateService, private router: Router, private cdr: ChangeDetectorRef, private api: ApiService) { }
+  constructor(
+    private state: StateService,
+    private cdr: ChangeDetectorRef,
+    private api: ApiService,
+    private sanitizer: DomSanitizer
+  ) { }
 
   ngOnInit(): void {
     this.transcriptText = '';
@@ -68,8 +73,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.isRecording = true;
         this.stopRequested = false;
         this.finalBatchSent = false;
-        this.navigating = false;
-        this.statusText = 'Recording...';
+  this.status = 'Gravando...';
         this.transcriptText = 'Transcript will appear here...';
         this.summaryHtml = '';
         this.canSummarize = false;
@@ -82,7 +86,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.startContinuousRecorder(stream);
       })
       .catch(() => {
-        this.statusText = 'Microphone access denied.';
+        this.status = 'Acesso ao microfone negado.';
       });
   }
 
@@ -140,24 +144,13 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     }
   }
 
-  async generateProntuario() {
-    const text = this.state.fullTranscript();
-    if (!text) return;
-    // Garante parada da gravação antes de navegar
-    if (this.isRecording && !this.stopRequested) {
-        this.stopRecording();
-    }
-    this.navigating = true;
-    this.router.navigateByUrl('/prontuario');
-  }
-
   // Inicia um único MediaRecorder contínuo; janelas são geradas por software com overlap
   private startContinuousRecorder(stream: MediaStream): void {
     try {
       // Força mimeType para garantir header consistente
       this.mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
     } catch {
-      this.statusText = 'MediaRecorder not supported in this browser.';
+      this.status = 'MediaRecorder não suportado neste navegador.';
       return;
     }
 
@@ -176,7 +169,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       // Ao parar, envia batch final se houver algo
       this.emitBatch(true);
       this.isRecording = false;
-      this.statusText = 'Recording stopped.';
+      this.status = 'Gravação finalizada.';
       this.stopStream();
     };
 
@@ -186,7 +179,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.lastBatchSentAt = Date.now();
       this.scheduleNextBatchSend();
     } catch {
-      this.statusText = 'Failed to start MediaRecorder.';
+      this.status = 'Falha ao iniciar o MediaRecorder.';
     }
   }
 
@@ -227,8 +220,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // --------- API ---------
 
   private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
-    if (this.finalBatchSent && !isFinal) return; // aborta envios tardios
-    if (this.navigating && !isFinal) return;
+  if (this.finalBatchSent && !isFinal) return; // aborta envios tardios
     try {
       // Chama o serviço centralizado
       this.api.transcribeBatch(blob).subscribe({
@@ -238,14 +230,59 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
             this.showGenerate = true;
             try { this.cdr.detectChanges(); } catch { }
           }
-          this.statusText = isFinal ? 'Recording stopped.' : 'Batch sent!';
+          this.status = isFinal ? 'Gravação finalizada.' : 'Lote enviado!';
         },
         error: (_err) => {
-          this.statusText = 'Error sending audio batch.';
+          this.status = 'Erro ao enviar lote de áudio.';
         }
       });
     } catch (_err) {
-      this.statusText = 'Error sending audio batch.';
+      this.status = 'Erro ao enviar lote de áudio.';
+    }
+  }
+
+  private markdownToHtml(md: string): string {
+    let html = md
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<b>$1</b>')
+      .replace(/\*(.*?)\*/gim, '<i>$1</i>')
+      .replace(/\n\n/g, '<br/><br/>')
+      .replace(/\n/g, '<br/>');
+
+    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
+    return html;
+  }
+
+  async generateProntuario() {
+    const text = this.state.fullTranscript();
+    if (!text || this.isSummarizing) return;
+    if (this.isRecording && !this.stopRequested) {
+      this.stopRecording();
+    }
+    this.isSummarizing = true;
+    this.status = 'Gerando prontuário...';
+    this.summaryHtml = '';
+    try {
+      const resp = await firstValueFrom(
+        this.api.summarizeTranscript(text, this.getCSRFToken())
+      );
+      if (resp?.summary) {
+        const html = this.markdownToHtml(resp.summary);
+        this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+        this.status = 'Prontuário gerado.';
+      } else {
+        this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Nenhum resumo retornado.');
+        this.status = 'Nenhum resumo retornado.';
+      }
+    } catch (_err) {
+      this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Erro ao gerar prontuário.');
+      this.status = 'Erro ao gerar prontuário.';
+    } finally {
+      this.isSummarizing = false;
+      this.showGenerate = true;
+      try { this.cdr.detectChanges(); } catch { }
     }
   }
 

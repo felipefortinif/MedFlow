@@ -15,6 +15,20 @@
       <div class="transcript">{{ transcriptText }}</div>
     </div>
 
-    <button class="record-btn" *ngIf="showGenerate" (click)="generateProntuario()">📝 Gerar Prontuário</button>
+    <button
+      class="record-btn"
+      *ngIf="showGenerate"
+      (click)="generateProntuario()"
+      [disabled]="!canSummarize || isSummarizing"
+    >
+      <ng-container *ngIf="!isSummarizing; else generatingLabel">📝 Gerar Prontuário</ng-container>
+    </button>
+    <ng-template #generatingLabel>⏳ Gerando...</ng-template>
+
+    <div class="summary" *ngIf="summaryHtml || isSummarizing">
+      <h3>Prontuário gerado:</h3>
+      <div *ngIf="isSummarizing" class="summary-loading">Gerando prontuário...</div>
+      <div *ngIf="!isSummarizing && summaryHtml" class="summary-content" [innerHTML]="summaryHtml"></div>
+    </div>
   </div>
 </div>
