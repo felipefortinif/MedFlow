@@ -4,37 +4,63 @@
     <a class="ghost-btn" routerLink="/pacientes">← Voltar ao início</a>
   </div>
 
-  <div class="record-area">
-    <div class="voice-visual" [class.recording]="isRecording">
-      <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
-      <div class="voice-icon">🎙️</div>
-    </div>
-
-    <div class="controls">
-      <button class="record-btn" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar Áudio</button>
-      <button class="record-btn" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️ Parar</button>
-    </div>
-
-    <div class="status">{{ status }}</div>
-
-    <button
-      class="record-btn"
-      *ngIf="showGenerate && !isSummarizing"
-      (click)="generateProntuario()"
-      [disabled]="!canSummarize || isProcessingFinal"
-    >
-      📝 Gerar Prontuário
-    </button>
-
-    <div class="summary" *ngIf="summaryHtml || isSummarizing">
-      <h3>Prontuário gerado:</h3>
-      <div *ngIf="isSummarizing" class="summary-loading">
-        Gerando prontuário
-        <span class="dot dot-1">.</span>
-        <span class="dot dot-2">.</span>
-        <span class="dot dot-3">.</span>
+  <div class="layout">
+    <aside class="meta-panel">
+      <h2>Detalhes da sessão</h2>
+      <div class="meta-row">
+        <span class="label">Paciente</span>
+        <span class="value">{{ patientName }}</span>
       </div>
-      <div *ngIf="!isSummarizing && summaryHtml" class="summary-content" [innerHTML]="summaryHtml"></div>
-    </div>
+      <div class="meta-row">
+        <span class="label">Início</span>
+        <span class="value">{{ sessionStartedLabel || '—' }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="label">Status</span>
+        <span class="value">{{ status }}</span>
+      </div>
+      <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
+        ⬇️ Exportar prontuário
+      </button>
+    </aside>
+
+    <section class="record-area">
+      <div class="status-badge" [class.recording]="isRecording" [class.processing]="isProcessingFinal" [class.idle]="!isRecording && !isProcessingFinal && !isSummarizing">
+        {{ status }}
+      </div>
+
+      <div class="voice-visual" [class.recording]="isRecording">
+        <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
+        <div class="voice-icon">🎙️</div>
+  <div class="voice-caption" *ngIf="isRecording && !isProcessingFinal">Escutando...</div>
+  <div class="voice-caption" *ngIf="isProcessingFinal">Processando áudio...</div>
+      </div>
+
+      <div class="controls">
+        <button class="record-btn primary" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar áudio</button>
+        <button class="record-btn danger" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️ Parar</button>
+      </div>
+
+      <button
+        class="record-btn secondary"
+        *ngIf="showGenerate && !isSummarizing"
+        (click)="generateProntuario()"
+        [disabled]="!canSummarize || isProcessingFinal"
+      >
+        📝 Gerar prontuário
+      </button>
+
+      <section class="summary" *ngIf="summaryHtml || isSummarizing">
+        <h3>Prontuário gerado</h3>
+        <div *ngIf="isSummarizing" class="summary-loading">
+          Gerando prontuário
+          <span class="dot dot-1">.</span>
+          <span class="dot dot-2">.</span>
+          <span class="dot dot-3">.</span>
+        </div>
+        <div *ngIf="!isSummarizing && summaryHtml" class="summary-content" [innerHTML]="summaryHtml"></div>
+        <div *ngIf="!isSummarizing && !summaryHtml" class="summary-empty">Nenhum prontuário disponível no momento.</div>
+      </section>
+    </section>
   </div>
 </div>

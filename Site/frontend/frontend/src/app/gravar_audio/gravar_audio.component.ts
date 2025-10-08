@@ -22,6 +22,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   isSummarizing = false;
   backendUrl = 'http://127.0.0.1:8000/';
   voiceScale = 1;
+  sessionStartedAt: Date | null = null;
+  lastSummaryRaw = '';
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -59,7 +61,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-  this.clearBatchScheduler();
+    this.clearBatchScheduler();
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try { this.mediaRecorder.stop(); } catch { }
     }
@@ -71,20 +73,30 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     return this.state.paciente()?.nome ?? 'Paciente';
   }
 
+  get sessionStartedLabel(): string | null {
+    if (!this.sessionStartedAt) return null;
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(this.sessionStartedAt);
+  }
+
   startRecording(): void {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then((stream: MediaStream) => {
         this.isRecording = true;
-  this.stopRequested = false;
-  this.isProcessingFinal = false;
+        this.stopRequested = false;
+        this.isProcessingFinal = false;
         this.finalBatchSent = false;
-    this.status = 'Gravando...';
+        this.status = 'Gravando...';
         this.summaryHtml = '';
+        this.lastSummaryRaw = '';
         this.canSummarize = false;
         this.showGenerate = false;
         this.fullTranscript = '';
         this.timedChunks = [];
         this.lastBatchSentAt = null;
+        this.sessionStartedAt = new Date();
 
         this.stream = stream;
         this.startVoiceVisualizer(stream);
@@ -97,9 +109,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   stopRecording() {
     if (!this.isRecording) return;
-  this.stopRequested = true;
-  this.isProcessingFinal = true;
-  this.showGenerate = true;
+    this.isRecording = false;
+    this.stopRequested = true;
+    this.isProcessingFinal = true;
+    this.showGenerate = true;
     this.status = 'Processando áudio...';
     this.clearBatchScheduler();
     this.stopVoiceVisualizer();
@@ -234,10 +247,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
       this.audioContext = new AudioContextCtor();
       const source = this.audioContext.createMediaStreamSource(stream);
-  this.analyser = this.audioContext.createAnalyser();
-  this.analyser.fftSize = 2048;
-  source.connect(this.analyser);
-  this.analyserData = new Uint8Array(this.analyser.fftSize) as Uint8Array<ArrayBuffer>;
+      this.analyser = this.audioContext.createAnalyser();
+      this.analyser.fftSize = 2048;
+      source.connect(this.analyser);
+      this.analyserData = new Uint8Array(this.analyser.fftSize) as Uint8Array<ArrayBuffer>;
       this.tickVoiceVisualizer();
     } catch (_err) {
       this.voiceScale = 1;
@@ -330,6 +343,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.isSummarizing = true;
     this.status = 'Gerando prontuário...';
     this.summaryHtml = '';
+    this.lastSummaryRaw = '';
     try {
       const resp = await firstValueFrom(
         this.api.summarizeTranscript(text, this.getCSRFToken())
@@ -337,6 +351,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       if (resp?.summary) {
         const html = this.markdownToHtml(resp.summary);
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+        this.lastSummaryRaw = html;
         this.status = 'Prontuário gerado.';
       } else {
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Nenhum resumo retornado.');
@@ -344,11 +359,27 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       }
     } catch (_err) {
       this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Erro ao gerar prontuário.');
+      this.lastSummaryRaw = '';
       this.status = 'Erro ao gerar prontuário.';
     } finally {
       this.isSummarizing = false;
       try { this.cdr.detectChanges(); } catch { }
     }
+  }
+
+  exportSummary() {
+    if (!this.lastSummaryRaw) return;
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário - ${this.patientName}</title></head><body>${this.lastSummaryRaw}</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `prontuario-${Date.now()}.html`;
+      anchor.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
 
