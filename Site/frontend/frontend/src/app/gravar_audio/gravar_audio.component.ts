@@ -5,6 +5,7 @@ import { StateService } from '../shared/state.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -347,21 +348,25 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     if (this.finalBatchSent && !isFinal) return; // aborta envios tardios
     try {
       // Chama o serviço centralizado
-      this.api.transcribeBatch(blob).subscribe({
+      const request$ = this.api.transcribeBatch(blob).pipe(
+        finalize(() => {
+          if (isFinal) {
+            this.isProcessingFinal = false;
+            this.showGenerate = this.showGenerate || this.canSummarize;
+            try { this.cdr.detectChanges(); } catch { }
+          }
+        })
+      );
+
+      request$.subscribe({
         next: (data) => {
           if (data?.transcript) this.appendTranscript(data.transcript);
           if (isFinal) {
-            this.isProcessingFinal = false;
             this.showGenerate = true;
-            try { this.cdr.detectChanges(); } catch { }
           }
           this.status = isFinal ? 'Gravação finalizada.' : ' ';
         },
         error: (_err) => {
-          if (isFinal) {
-            this.isProcessingFinal = false;
-            this.showGenerate = this.canSummarize;
-          }
           this.status = 'Erro ao enviar lote de áudio.';
         }
       });
@@ -369,6 +374,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       if (isFinal) {
         this.isProcessingFinal = false;
         this.showGenerate = this.canSummarize;
+        try { this.cdr.detectChanges(); } catch { }
       }
       this.status = 'Erro ao enviar lote de áudio.';
     }
