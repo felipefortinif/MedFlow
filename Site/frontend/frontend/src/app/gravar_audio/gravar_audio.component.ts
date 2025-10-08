@@ -31,7 +31,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // Primeiro chunk (contém header EBML do WebM) para reaproveitar nas janelas parciais
   private headerChunk: BlobPart | null = null;
   private batchScheduler: ReturnType<typeof setTimeout> | null = null;
-  private stopRequested = false;
+  stopRequested = false;
+  isProcessingFinal = false;
   // Configurações do batch
   private readonly batchSize = 25000; // duração da janela (ms)
   private readonly batchOverlap = 5000; // overlap entre janelas (ms)
@@ -74,7 +75,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then((stream: MediaStream) => {
         this.isRecording = true;
-        this.stopRequested = false;
+  this.stopRequested = false;
+  this.isProcessingFinal = false;
         this.finalBatchSent = false;
     this.status = 'Gravando...';
         this.summaryHtml = '';
@@ -95,7 +97,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   stopRecording() {
     if (!this.isRecording) return;
-    this.stopRequested = true;
+  this.stopRequested = true;
+  this.isProcessingFinal = true;
+  this.showGenerate = true;
+    this.status = 'Processando áudio...';
     this.clearBatchScheduler();
     this.stopVoiceVisualizer();
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
@@ -184,7 +189,13 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   private emitBatch(isFinal: boolean) {
-    if (this.timedChunks.length === 0) return;
+    if (this.timedChunks.length === 0) {
+      if (isFinal) {
+        this.isProcessingFinal = false;
+        this.showGenerate = this.canSummarize;
+      }
+      return;
+    }
     if (this.finalBatchSent) return; // já finalizado
     const now = Date.now();
     if (!isFinal) {
@@ -265,23 +276,32 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // --------- API ---------
 
   private async sendAudioBatch(blob: Blob, isFinal = false): Promise<void> {
-  if (this.finalBatchSent && !isFinal) return; // aborta envios tardios
+    if (this.finalBatchSent && !isFinal) return; // aborta envios tardios
     try {
       // Chama o serviço centralizado
       this.api.transcribeBatch(blob).subscribe({
         next: (data) => {
           if (data?.transcript) this.appendTranscript(data.transcript);
           if (isFinal) {
+            this.isProcessingFinal = false;
             this.showGenerate = true;
             try { this.cdr.detectChanges(); } catch { }
           }
           this.status = isFinal ? 'Gravação finalizada.' : ' ';
         },
         error: (_err) => {
+          if (isFinal) {
+            this.isProcessingFinal = false;
+            this.showGenerate = this.canSummarize;
+          }
           this.status = 'Erro ao enviar lote de áudio.';
         }
       });
     } catch (_err) {
+      if (isFinal) {
+        this.isProcessingFinal = false;
+        this.showGenerate = this.canSummarize;
+      }
       this.status = 'Erro ao enviar lote de áudio.';
     }
   }
@@ -327,7 +347,6 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.status = 'Erro ao gerar prontuário.';
     } finally {
       this.isSummarizing = false;
-      this.showGenerate = true;
       try { this.cdr.detectChanges(); } catch { }
     }
   }
