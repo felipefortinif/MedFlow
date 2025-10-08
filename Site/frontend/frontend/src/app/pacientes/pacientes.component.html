@@ -4,12 +4,16 @@
     <button class="add-btn" (click)="adicionarPaciente()">+ Adicionar</button>
   </div>
 
-  <div class="list">
+  <div *ngIf="loading">Carregando...</div>
+  <div *ngIf="!loading && error" style="color:#dc2626; margin-bottom:12px;">{{ error }}</div>
+  <div *ngIf="!loading && !error && pacientes.length === 0">Nenhum paciente encontrado.</div>
+
+  <div class="list" *ngIf="!loading && !error && pacientes.length > 0">
     <div class="item" *ngFor="let p of pacientes">
       <div class="avatar">{{ p.nome.charAt(0) }}</div>
       <div class="info">
         <div class="nome">{{ p.nome }}</div>
-        <div class="meta">CPF: {{ p.cpf }} • {{ p.nascimento }}</div>
+        <div class="meta">ID: {{ p.id }}</div>
       </div>
     </div>
   </div>

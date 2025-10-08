@@ -1,0 +1,31 @@
+<div class="create-wrapper">
+    <h2>Novo Paciente</h2>
+
+    <form (ngSubmit)="submit()" novalidate>
+        <label>Nome</label>
+        <input type="text" [(ngModel)]="name" name="name" required />
+
+        <label>Email</label>
+        <input type="email" [(ngModel)]="email" name="email" required />
+
+        <label>CPF</label>
+        <input type="text" [(ngModel)]="cpf" name="cpf" required />
+
+        <label>Data de Nascimento</label>
+        <input type="date" [(ngModel)]="date_of_birth" name="date_of_birth" [max]="todayISO()" required />
+
+        <label>Telefone</label>
+        <input type="text" [(ngModel)]="phone" name="phone" required />
+
+        <div class="actions">
+            <button type="submit" [disabled]="submitting">Salvar</button>
+            <button type="button" class="secondary" (click)="cancelar()" [disabled]="submitting">Cancelar</button>
+        </div>
+    </form>
+
+    <div class="status">
+        <span *ngIf="submitting">Enviando...</span>
+        <span class="error" *ngIf="!submitting && error">{{ error }}</span>
+        <span class="success" *ngIf="!submitting && success">{{ success }}</span>
+    </div>
+</div>

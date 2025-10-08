@@ -5,6 +5,8 @@ import { ProntuarioComponent } from './prontuario/prontuario.component';
 import { AuthComponent } from './auth/auth.component';
 import { PacientesComponent } from './pacientes/pacientes.component';
 import { authGuard } from './shared/auth.guard';
+import { CriaPacienteComponent } from './criar_paciente/criar_paciente';
+
 
 export const routes: Routes = [
 	{ path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -13,5 +15,6 @@ export const routes: Routes = [
 	{ path: 'adicionar-paciente', component: AdicionarPacienteComponent, canActivate: [authGuard] },
 	{ path: 'gravar-audio', component: GravarAudioComponent, canActivate: [authGuard] },
 	{ path: 'prontuario', component: ProntuarioComponent, canActivate: [authGuard] },
+	{ path: 'criar-paciente', component: CriaPacienteComponent, canActivate: [authGuard] },
 	{ path: '**', redirectTo: 'login' }
 ];

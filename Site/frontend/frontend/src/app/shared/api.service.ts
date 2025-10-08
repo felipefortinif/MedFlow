@@ -9,6 +9,30 @@ export interface LoginResponse { token: string; msg?: string }
 export interface SignupResponse { message?: string; error?: any }
 export interface passwordResetResponse { message?: string; error?: any }
 export interface PasswordResetValidateResponse { valid: boolean; message?: string }
+export interface Patient { id: number; name: string; }
+export interface DoctorProfile {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  profile?: any;
+}
+export interface CreatePatientRequest {
+  doctor: number;
+  name: string;
+  email: string;
+  cpf: string;
+  date_of_birth: string; // yyyy-mm-dd
+  phone: string;
+}
+export interface CreatePatientResponse {
+  id: number;
+  name: string;
+  email: string;
+  cpf: string;
+  date_of_birth: string;
+  phone: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -26,7 +50,7 @@ export class ApiService {
 
   signup(username: string,
     password: string,
-    first_name: string, 
+    first_name: string,
     last_name: string,
     email: string,
     cpf: string,
@@ -44,16 +68,16 @@ export class ApiService {
     const form = new FormData();
     form.append('audio', file, (file as File).name ?? 'chunk.wav');
     return this.http.post<BatchTranscribeResponse>(`${this.baseUrl}transcriber/api/transcribe/batch/`, form)
-    .pipe(catchError(this.handleError));
+      .pipe(catchError(this.handleError));
   }
-  
+
   summarizeTranscript(transcript: string, CSRFToken: string): Observable<SummarizeResponse> {
     const body = { transcript };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
     return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
-    .pipe(catchError(this.handleError));
+      .pipe(catchError(this.handleError));
   }
-  
+
   passwordReset(email: string): Observable<HttpResponse<passwordResetResponse>> {
     const body = { email };
     return this.http
@@ -77,7 +101,34 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
+  createPatient(payload: CreatePatientRequest, csrfToken?: string): Observable<CreatePatientResponse> {
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) headers = headers.set('Authorization', `Token ${authToken}`);
+    if (csrfToken) headers = headers.set('X-CSRFToken', csrfToken);
+    return this.http
+      .post<CreatePatientResponse>(`${this.baseUrl}doctor/patient/`, payload, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  getDoctorProfile(): Observable<DoctorProfile> {
+    let headers = new HttpHeaders();
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) headers = headers.set('Authorization', `Token ${authToken}`);
+    return this.http
+      .get<DoctorProfile>(`${this.baseUrl}doctor/account/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+
   private handleError(error: HttpErrorResponse) {
     return throwError(() => error);
+  }
+  getPatientsList(): Observable<Patient[]> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+    return this.http.get<Patient[]>(`${this.baseUrl}doctor/patients_list/`, { headers })
+      .pipe(catchError(this.handleError));
   }
 }
