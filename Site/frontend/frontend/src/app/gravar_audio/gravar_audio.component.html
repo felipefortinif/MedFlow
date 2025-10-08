@@ -5,15 +5,17 @@
   </div>
 
   <div class="record-area">
-    <button class="record-btn" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar Áudio</button>
-    <button class="record-btn" (click)="stopRecording()" [disabled]="!isRecording">⏹️ Parar</button>
+    <div class="voice-visual" [class.recording]="isRecording">
+      <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
+      <div class="voice-icon">🎙️</div>
+    </div>
+
+    <div class="controls">
+      <button class="record-btn" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar Áudio</button>
+      <button class="record-btn" (click)="stopRecording()" [disabled]="!isRecording">⏹️ Parar</button>
+    </div>
 
     <div class="status">{{ status }}</div>
-
-    <div id="outputs">
-      <h3>Transcrição (parcial):</h3>
-      <div class="transcript">{{ transcriptText }}</div>
-    </div>
 
     <button
       class="record-btn"

@@ -1,8 +1,12 @@
 .topbar { display:flex; justify-content: space-between; align-items:center; }
-.record-area { margin-top: 16px; }
-.record-btn { padding: 10px 16px; margin-right: 8px; }
-.status { margin-top: 8px; color: #555; }
-.transcript { margin-top: 12px; border: 1px solid #ccc; padding: 10px; min-height: 80px; }
+.record-area { margin-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.controls { display: flex; gap: 12px; }
+.record-btn { padding: 10px 16px; }
+.status { margin-top: 4px; color: #bbb; text-align: center; min-height: 24px; }
+.voice-visual { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
+.voice-ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(0,176,255,0.25) 0%, rgba(0,176,255,0.05) 60%, transparent 100%); transform: scale(1); transition: transform 0.1s ease-out, box-shadow 0.2s ease; box-shadow: 0 0 0 rgba(0,176,255,0.4); }
+.voice-visual.recording .voice-ring { box-shadow: 0 0 20px rgba(0,176,255,0.45); }
+.voice-icon { position: relative; font-size: 48px; color: #00b0ff; text-shadow: 0 0 8px rgba(0,176,255,0.6); }
 .summary { margin-top: 24px; border-top: 1px solid #ddd; padding-top: 16px; }
 .summary-content { margin-top: 12px; border: 1px solid #ccc; padding: 12px; background: #fafafa; border-radius: 4px; }
 .summary-loading { margin-top: 12px; color: #0070f3; font-style: italic; }

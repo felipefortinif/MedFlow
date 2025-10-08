@@ -16,12 +16,12 @@ import { firstValueFrom } from 'rxjs';
 export class GravarAudioComponent implements OnInit, OnDestroy {
   status = 'Pronto para gravar';
   isRecording = false;
-  transcriptText = '';
   showGenerate = false;
   canSummarize = false;
   summaryHtml: SafeHtml = '';
   isSummarizing = false;
   backendUrl = 'http://127.0.0.1:8000/';
+  voiceScale = 1;
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -38,6 +38,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private readonly chunkTimeslice = 1000; // intervalo de emissão de ondataavailable (ms)
   private lastBatchSentAt: number | null = null;
   private finalBatchSent = false; // evita envios duplicados após parada
+  private audioContext: AudioContext | null = null;
+  private analyser: AnalyserNode | null = null;
+  private analyserData: Uint8Array<ArrayBuffer> | null = null;
+  private analyserFrame: number | null = null;
 
   // Dados
   private fullTranscript = '';
@@ -50,7 +54,6 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.transcriptText = '';
     this.state.resetTranscript();
   }
 
@@ -73,8 +76,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.isRecording = true;
         this.stopRequested = false;
         this.finalBatchSent = false;
-  this.status = 'Gravando...';
-        this.transcriptText = 'Transcript will appear here...';
+    this.status = 'Gravando...';
         this.summaryHtml = '';
         this.canSummarize = false;
         this.showGenerate = false;
@@ -83,6 +85,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.lastBatchSentAt = null;
 
         this.stream = stream;
+        this.startVoiceVisualizer(stream);
         this.startContinuousRecorder(stream);
       })
       .catch(() => {
@@ -94,6 +97,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     if (!this.isRecording) return;
     this.stopRequested = true;
     this.clearBatchScheduler();
+    this.stopVoiceVisualizer();
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try { this.mediaRecorder.stop(); } catch { }
     }
@@ -112,10 +116,6 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   private appendTranscript(text: string): void {
     if (!text) return;
-    if (!this.transcriptText || this.transcriptText === 'Transcript will appear here...') {
-      this.transcriptText = '';
-    }
-    this.transcriptText += text + ' ';
     this.fullTranscript += text + ' ';
     // manter StateService sincronizado para outras telas
     try { this.state.appendTranscript(text); } catch (_e) { }
@@ -215,6 +215,51 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stream.getTracks().forEach((t) => t.stop());
       this.stream = null;
     }
+    this.stopVoiceVisualizer();
+  }
+
+  private startVoiceVisualizer(stream: MediaStream) {
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      this.audioContext = new AudioContextCtor();
+      const source = this.audioContext.createMediaStreamSource(stream);
+  this.analyser = this.audioContext.createAnalyser();
+  this.analyser.fftSize = 2048;
+  source.connect(this.analyser);
+  this.analyserData = new Uint8Array(this.analyser.fftSize) as Uint8Array<ArrayBuffer>;
+      this.tickVoiceVisualizer();
+    } catch (_err) {
+      this.voiceScale = 1;
+    }
+  }
+
+  private tickVoiceVisualizer() {
+    if (!this.analyser || !this.analyserData) return;
+    this.analyser.getByteTimeDomainData(this.analyserData);
+    let sumSquares = 0;
+    for (let i = 0; i < this.analyserData.length; i++) {
+      const deviation = (this.analyserData[i] - 128) / 128;
+      sumSquares += deviation * deviation;
+    }
+    const rms = Math.sqrt(sumSquares / this.analyserData.length);
+    const level = Math.min(rms * 3, 1.4);
+    this.voiceScale = 1 + level * 0.8;
+    try { this.cdr.detectChanges(); } catch { }
+    this.analyserFrame = requestAnimationFrame(() => this.tickVoiceVisualizer());
+  }
+
+  private stopVoiceVisualizer() {
+    if (this.analyserFrame !== null) {
+      cancelAnimationFrame(this.analyserFrame);
+      this.analyserFrame = null;
+    }
+    if (this.audioContext) {
+      try { this.audioContext.close(); } catch { }
+      this.audioContext = null;
+    }
+    this.analyser = null;
+    this.analyserData = null;
+    this.voiceScale = 1;
   }
 
   // --------- API ---------
@@ -230,7 +275,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
             this.showGenerate = true;
             try { this.cdr.detectChanges(); } catch { }
           }
-          this.status = isFinal ? 'Gravação finalizada.' : 'Lote enviado!';
+          this.status = isFinal ? 'Gravação finalizada.' : ' ';
         },
         error: (_err) => {
           this.status = 'Erro ao enviar lote de áudio.';
