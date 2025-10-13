@@ -73,7 +73,20 @@
       </button>
 
       <section class="summary" *ngIf="summaryHtml || isSummarizing">
-        <h3>Prontuário gerado</h3>
+        <div class="summary-header">
+          <h3>Prontuário gerado</h3>
+          <div class="summary-actions">
+            <span class="copy-feedback" *ngIf="copyFeedback">{{ copyFeedback }}</span>
+            <button
+              type="button"
+              class="copy-btn"
+              (click)="copySummary()"
+              [disabled]="isSummarizing || !canCopySummary"
+            >
+              📋 Copiar prontuário
+            </button>
+          </div>
+        </div>
         <div *ngIf="isSummarizing" class="summary-loading">
           Gerando prontuário
           <span class="dot dot-1">.</span>

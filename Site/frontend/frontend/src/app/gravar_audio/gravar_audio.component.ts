@@ -25,7 +25,9 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   voiceScale = 1;
   sessionStartedAt: Date | null = null;
   lastSummaryRaw = '';
+  lastSummaryMarkdown = '';
   recordingDuration = 0;
+  copyFeedback = '';
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -48,6 +50,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private analyserData: Uint8Array<ArrayBuffer> | null = null;
   private analyserFrame: number | null = null;
   private recordingTicker: ReturnType<typeof setInterval> | null = null;
+  private copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Dados
   private fullTranscript = '';
@@ -71,6 +74,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.flushFinalBatch();
     this.stopStream();
     this.stopRecordingTimer();
+    this.clearCopyFeedback();
   }
 
   get patientName(): string {
@@ -128,6 +132,8 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.status = 'Gravando...';
         this.summaryHtml = '';
         this.lastSummaryRaw = '';
+  this.lastSummaryMarkdown = '';
+  this.copyFeedback = '';
         this.canSummarize = false;
         this.showGenerate = false;
         this.fullTranscript = '';
@@ -405,14 +411,17 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.status = 'Gerando prontuário...';
     this.summaryHtml = '';
     this.lastSummaryRaw = '';
+    this.lastSummaryMarkdown = '';
+  this.copyFeedback = '';
     try {
       const resp = await firstValueFrom(
         this.api.summarizeTranscript(text, this.getCSRFToken())
       );
       if (resp?.summary) {
         const html = this.markdownToHtml(resp.summary);
-        this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
-        this.lastSummaryRaw = html;
+  this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+  this.lastSummaryRaw = html;
+  this.lastSummaryMarkdown = resp.summary.trim();
         this.status = 'Prontuário gerado.';
       } else {
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Nenhum resumo retornado.');
@@ -421,11 +430,84 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     } catch (_err) {
       this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Erro ao gerar prontuário.');
       this.lastSummaryRaw = '';
+      this.lastSummaryMarkdown = '';
       this.status = 'Erro ao gerar prontuário.';
     } finally {
       this.isSummarizing = false;
       try { this.cdr.detectChanges(); } catch { }
     }
+  }
+
+  get canCopySummary(): boolean {
+    return !!(this.lastSummaryMarkdown?.trim() || this.lastSummaryRaw?.trim());
+  }
+
+  async copySummary(): Promise<void> {
+    if (!this.canCopySummary) return;
+    const textToCopy = this.lastSummaryMarkdown?.trim() || this.extractPlainText(this.lastSummaryRaw);
+    if (!textToCopy) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        this.fallbackCopy(textToCopy);
+      }
+      this.status = 'Prontuário copiado para a área de transferência.';
+      this.showCopyFeedback('Copiado!');
+    } catch {
+      try {
+        this.fallbackCopy(textToCopy);
+        this.status = 'Prontuário copiado para a área de transferência.';
+        this.showCopyFeedback('Copiado!');
+      } catch {
+        this.status = 'Não foi possível copiar o prontuário.';
+        this.showCopyFeedback('Falha ao copiar');
+      }
+    }
+  }
+
+  private extractPlainText(html: string): string {
+    if (!html) return '';
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    return el.textContent?.trim() ?? '';
+  }
+
+  private fallbackCopy(text: string) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!ok) {
+      throw new Error('copy command failed');
+    }
+  }
+
+  private showCopyFeedback(message: string) {
+    this.copyFeedback = message;
+    if (this.copyFeedbackTimer) {
+      clearTimeout(this.copyFeedbackTimer);
+    }
+    this.copyFeedbackTimer = setTimeout(() => {
+      this.copyFeedback = '';
+      this.copyFeedbackTimer = null;
+      try { this.cdr.detectChanges(); } catch { }
+    }, 2000);
+    try { this.cdr.detectChanges(); } catch { }
+  }
+
+  private clearCopyFeedback() {
+    if (this.copyFeedbackTimer) {
+      clearTimeout(this.copyFeedbackTimer);
+      this.copyFeedbackTimer = null;
+    }
+    this.copyFeedback = '';
   }
 
   exportSummary() {
