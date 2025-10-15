@@ -4,11 +4,11 @@ from doctor.models import Patients
 from rest_framework import generics
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.parsers import JSONParser
+# from rest_framework.parsers import JSONParser
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi

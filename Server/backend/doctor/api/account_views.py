@@ -24,10 +24,10 @@ class CustomAuthToken(ObtainAuthToken):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                'email': openapi.Schema(type=openapi.TYPE_STRING),
                 'password': openapi.Schema(type=openapi.TYPE_STRING),
             },
-            required=['username', 'password', ],
+            required=['email', 'password'],
         ),
         responses={
             status.HTTP_200_OK: 'Token is returned.',
@@ -35,20 +35,30 @@ class CustomAuthToken(ObtainAuthToken):
     },
 )
     def post(self, request, *args, **kwargs):
+
+            data = request.data
+            data['username'] = data.get('email', '')
             serializer = self.serializer_class(data=request.data, context={'request': request})
-            if serializer.is_valid():
-                username = serializer.validated_data['username']
-                password = serializer.validated_data['password']
-                user = authenticate(request, username=username, password=password)
-                if user is not None:
-                    token, _ = Token.objects.get_or_create(user=user)
-                    login(request, user)
-                    return Response({'token': token.key})
-            return Response({'msg': 'Login ou Senha Inválidos.'}, status=status.HTTP_401_UNAUTHORIZED)
+            try:
+                if serializer.is_valid():
+                    username = serializer.validated_data['username']
+                    password = serializer.validated_data['password']
+                    user = authenticate(request, username=username, password=password)
+                    if user is not None:
+                        token, _ = Token.objects.get_or_create(user=user)
+                        login(request, user)
+                        return Response({'token': token.key})
+                    else:
+                        return Response({'msg': 'user not found.'}, status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response(serializer.errors, status=status.HTTP_403_FORBIDDEN)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            # return Response({'msg': 'Login ou Senha Inválidos.'}, status=status.HTTP_401_UNAUTHORIZED)
     
     @swagger_auto_schema(
-        operation_summary='Obtém o username do usuário',
-        operation_description="Retorna o username do usuário ou apenas visitante se o usuário não estiver autenticado",
+        operation_summary='Obtém o email do usuário',
+        operation_description="Retorna o email do usuário ou apenas visitante se o usuário não estiver autenticado",
         security=[{'Token':[]}],
         manual_parameters=[
             openapi.Parameter(
@@ -61,10 +71,10 @@ class CustomAuthToken(ObtainAuthToken):
         ],
         responses={
             200: openapi.Response(
-                description='Nome do usuário',
+                description='Email do usuário',
                 schema=openapi.Schema(
                 type=openapi.TYPE_OBJECT,
-                properties={'username': openapi.Schema(type=openapi.TYPE_STRING)},
+                properties={'email': openapi.Schema(type=openapi.TYPE_STRING)},
                 ),
             )
         }
@@ -72,18 +82,18 @@ class CustomAuthToken(ObtainAuthToken):
     def get(self, request):
         '''
         Parâmetros: o token de acesso
-        Retorna: o username ou 'visitante'
+        Retorna: o email ou 'visitante'
         '''
         try:
             token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1] # token
             token_obj = Token.objects.get(key=token)
             user = token_obj.user
             return Response(
-                {'username': user.username},
+                {'user': user.email},
                 status=status.HTTP_200_OK)
         except (Token.DoesNotExist, AttributeError):
             return Response(
-            {'username': 'visitante'},
+            {'user': 'visitante'},
             status=status.HTTP_404_NOT_FOUND)
     
     @swagger_auto_schema(
@@ -193,9 +203,9 @@ class AccountAPI(APIView):
         operation_description="Creates a new user and associated doctor profile.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["username", "password", "email", "cpf", "crm", "specialty"],
+            required=["password", "email", "cpf", "crm", "specialty"],
             properties={
-                "username": openapi.Schema(type=openapi.TYPE_STRING, description="Username for the doctor"),
+                
                 "password": openapi.Schema(type=openapi.TYPE_STRING, description="Password for the doctor"),
                 "first_name": openapi.Schema(type=openapi.TYPE_STRING, description="First name"),
                 "last_name": openapi.Schema(type=openapi.TYPE_STRING, description="Last name"),
@@ -215,7 +225,7 @@ class AccountAPI(APIView):
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
                 description="Invalid input or error.",
-                examples={"application/json": {"error": "Username, password, and email are required."}}
+                examples={"application/json": {"error": "Password, and email are required."}}
             ),
         },
     )
@@ -225,21 +235,22 @@ class AccountAPI(APIView):
         """
         # Extract user data from the request
         user_data = {
-            'username': request.data.get('username'),
+            
             'password': request.data.get('password'),
             'email': request.data.get('email'),
         }
 
         # Validate required fields
         if not all(user_data.values()):
-            return Response({"error": "Username, password, and email are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Email and Password are required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Create the user
             user = User.objects.create_user(
-                username=user_data['username'],
+                
                 password=user_data['password'],
                 email=user_data['email'],
+                username=user_data['email'],
                 first_name=request.data.get('first_name'),
                 last_name=request.data.get('last_name'),
             )
@@ -282,7 +293,6 @@ class AccountAPI(APIView):
                     type=openapi.TYPE_OBJECT,
                     properties={
                         'id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'username': openapi.Schema(type=openapi.TYPE_STRING),
                         'first_name': openapi.Schema(type=openapi.TYPE_STRING),
                         'last_name': openapi.Schema(type=openapi.TYPE_STRING),
                         'profile': openapi.Schema(type=openapi.TYPE_OBJECT, description="Doctor profile", properties={
@@ -329,7 +339,6 @@ class AccountAPI(APIView):
             # Return user and profile details if authenticated
             user_data = {
                 'id': user.id,
-                'username': user.username,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
@@ -392,6 +401,7 @@ class AccountAPI(APIView):
             user.first_name = request.data.get('first_name', user.first_name)
             user.last_name = request.data.get('last_name', user.last_name)
             user.email = request.data.get('email', user.email)
+            user.username = request.data.get('email', user.email)
             user.save()
 
             # Update profile fields if provided
@@ -406,7 +416,7 @@ class AccountAPI(APIView):
             except Profile.DoesNotExist:
                 return Response({'msg': 'Perfil não encontrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({'msg': 'Usuário atualizado com sucesso.'}, status=status.HTTP_200_OK)
+            
         else:
             return Response({'msg': 'Usuário não autenticado.'}, status=status.HTTP_401_UNAUTHORIZED)
         
