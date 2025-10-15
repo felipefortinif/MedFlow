@@ -71,6 +71,10 @@
         <p>Futuramente você verá prognósticos, gravações e resumos deste paciente aqui.</p>
       </article>
     </section>
+
+    <button type="button" class="nova-consulta" [routerLink]="['/gravar-audio']" [disabled]="deleting || saving">
+      Nova consulta
+    </button>
   </ng-container>
 </div>
 
