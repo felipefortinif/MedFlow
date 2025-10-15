@@ -17,7 +17,7 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
         
         def to_representation(self, instance):
             representation = super().to_representation(instance)
-            representation['username'] = instance.user.username
+            representation['email'] = instance.user.email
             return representation
 
 class PatientsSerializer(serializers.ModelSerializer):
