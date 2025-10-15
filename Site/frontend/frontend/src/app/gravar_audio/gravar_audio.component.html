@@ -43,25 +43,27 @@
     </aside>
 
     <section class="record-area">
-      <div class="status-badge" [ngClass]="statusChip.class">
-        <span class="chip-icon">{{ statusChip.icon }}</span>
-        <span class="chip-label">{{ statusChip.label }}</span>
-        <small class="chip-note">{{ status }}</small>
-      </div>
+      <ng-container *ngIf="!canSummarize">
+        <div class="status-badge" [ngClass]="statusChip.class">
+          <span class="chip-icon">{{ statusChip.icon }}</span>
+          <span class="chip-label">{{ statusChip.label }}</span>
+          <small class="chip-note">{{ status }}</small>
+        </div>
 
-      <div class="voice-visual" [class.recording]="isRecording">
-        <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
-        <div class="voice-icon">🎙️</div>
-      </div>
+        <div class="voice-visual" [class.recording]="isRecording">
+          <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
+          <div class="voice-icon">🎙️</div>
+        </div>
 
-      <div class="recording-timer" *ngIf="isRecording || recordingDuration > 0">
-        ⏱️ Duração: <span>{{ recordingDurationLabel }}</span>
-      </div>
+        <div class="recording-timer" *ngIf="isRecording || recordingDuration > 0">
+          ⏱️ Duração: <span>{{ recordingDurationLabel }}</span>
+        </div>
 
-      <div class="controls">
-        <button class="record-btn primary" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar áudio</button>
-        <button class="record-btn danger" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️ Parar</button>
-      </div>
+        <div class="controls">
+          <button class="record-btn primary" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar áudio</button>
+          <button class="record-btn danger" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️ Parar</button>
+        </div>
+      </ng-container>
 
       <button
         class="record-btn secondary"
