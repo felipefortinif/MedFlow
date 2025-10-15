@@ -27,7 +27,7 @@ class PatientsAdmin(admin.ModelAdmin):
 # Now register your custom UserAdmin
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'username', 'email', 'first_name', 'last_name']
-    search_fields = ['username', 'email', 'first_name', 'last_name']
+    list_display = ['id', 'email', 'first_name', 'last_name']
+    search_fields = [ 'email', 'first_name', 'last_name']
     list_filter = ['is_active', 'is_staff', 'is_superuser']
 

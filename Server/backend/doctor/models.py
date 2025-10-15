@@ -23,7 +23,7 @@ class Profile(models.Model):
     specialty = models.ForeignKey(Specialties, on_delete=models.CASCADE, blank=False)
     
     def __str__(self):
-        return f'Profile of {self.user.username}'
+        return f'Profile of {self.user.email}'
 
 
 class Patients(models.Model):
