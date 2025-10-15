@@ -1,0 +1,87 @@
+<div class="detalhe-container" *ngIf="!loading; else loadingTemplate">
+  <ng-container *ngIf="paciente; else errorTemplate">
+    <header class="detalhe-header">
+      <div class="header-main">
+        <button class="voltar" [routerLink]="['/pacientes']">Voltar</button>
+        <h1>{{ paciente.name }}</h1>
+      </div>
+      <button type="button" class="danger-outline" (click)="excluirPaciente()" [disabled]="deleting || saving">
+        {{ deleting ? 'Removendo...' : 'Excluir paciente' }}
+      </button>
+    </header>
+
+    <section class="detalhe-grid">
+      <article class="detalhe-card">
+        <form [formGroup]="form" (ngSubmit)="salvarEdicao()" class="detalhe-form">
+          <div class="card-header">
+            <h2>Informações do paciente</h2>
+            <div class="card-actions">
+              <button type="button" class="secondary" *ngIf="!editing" (click)="iniciarEdicao()" [disabled]="deleting">
+                Editar dados
+              </button>
+              <ng-container *ngIf="editing">
+                <button type="button" class="ghost" (click)="cancelarEdicao()" [disabled]="saving">
+                  Cancelar
+                </button>
+                <button type="submit" class="primary" [disabled]="saving">
+                  {{ saving ? 'Salvando...' : 'Salvar alterações' }}
+                </button>
+              </ng-container>
+            </div>
+          </div>
+
+          <div *ngIf="statusMessage" class="alert" [ngClass]="statusType">
+            {{ statusMessage }}
+          </div>
+
+          <div class="form-grid">
+            <label>
+              <span>Nome completo</span>
+              <input type="text" formControlName="name" placeholder="Nome do paciente" />
+              <small class="erro" *ngIf="campoInvalido('name')">Informe o nome do paciente.</small>
+            </label>
+
+            <label>
+              <span>E-mail</span>
+              <input type="email" formControlName="email" placeholder="email@exemplo.com" />
+              <small class="erro" *ngIf="campoInvalido('email')">Informe um e-mail válido.</small>
+            </label>
+
+            <label>
+              <span>CPF</span>
+              <input type="text" formControlName="cpf" placeholder="000.000.000-00" />
+              <small class="erro" *ngIf="campoInvalido('cpf')">Informe um CPF válido.</small>
+            </label>
+
+            <label>
+              <span>Data de nascimento</span>
+              <input type="date" formControlName="date_of_birth" />
+            </label>
+
+            <label>
+              <span>Telefone</span>
+              <input type="text" formControlName="phone" placeholder="(00) 00000-0000" />
+            </label>
+          </div>
+        </form>
+      </article>
+
+      <article class="detalhe-card vazio">
+        <h2>Histórico</h2>
+        <p>Futuramente você verá prognósticos, gravações e resumos deste paciente aqui.</p>
+      </article>
+    </section>
+
+    <button type="button" class="nova-consulta" [routerLink]="['/gravar-audio']" [disabled]="deleting || saving">
+      Nova consulta
+    </button>
+  </ng-container>
+</div>
+
+<ng-template #loadingTemplate>
+  <div class="estado-mensagem">Carregando informações do paciente...</div>
+</ng-template>
+
+<ng-template #errorTemplate>
+  <div class="estado-mensagem erro">{{ errorMessage }}</div>
+</ng-template>
