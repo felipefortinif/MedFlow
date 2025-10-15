@@ -43,7 +43,7 @@
     </aside>
 
     <section class="record-area">
-      <ng-container *ngIf="!canSummarize">
+      <ng-container *ngIf="showRecordUI">
         <div class="status-badge" [ngClass]="statusChip.class">
           <span class="chip-icon">{{ statusChip.icon }}</span>
           <span class="chip-label">{{ statusChip.label }}</span>

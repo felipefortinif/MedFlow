@@ -17,6 +17,7 @@ import { finalize } from 'rxjs/operators';
 export class GravarAudioComponent implements OnInit, OnDestroy {
   status = 'Pronto para gravar';
   isRecording = false;
+  showRecordUI = false;
   showGenerate = false;
   canSummarize = false;
   summaryHtml: SafeHtml = '';
@@ -64,6 +65,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.state.resetTranscript();
+    this.showRecordUI = true;
   }
 
   ngOnDestroy(): void {
@@ -132,9 +134,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.status = 'Gravando...';
         this.summaryHtml = '';
         this.lastSummaryRaw = '';
-  this.lastSummaryMarkdown = '';
-  this.copyFeedback = '';
+        this.lastSummaryMarkdown = '';
+        this.copyFeedback = '';
         this.canSummarize = false;
+        this.showRecordUI = true;
         this.showGenerate = false;
         this.fullTranscript = '';
         this.timedChunks = [];
@@ -407,6 +410,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stopRecording();
     }
     this.showGenerate = false;
+    this.showRecordUI = false;
     this.isSummarizing = true;
     this.status = 'Gerando prontuário...';
     this.summaryHtml = '';
