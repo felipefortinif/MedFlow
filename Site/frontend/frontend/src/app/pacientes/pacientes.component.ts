@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ApiService, Patient } from '../shared/api.service';
 
 interface PacienteItem {
@@ -11,7 +11,7 @@ interface PacienteItem {
 @Component({
   selector: 'app-pacientes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.css']
 })
@@ -51,6 +51,10 @@ export class PacientesComponent implements OnInit {
 
   adicionarPaciente() {
     this.router.navigate(['/criar-paciente']);
+  }
+
+  abrirPaciente(id: number) {
+    this.router.navigate(['/pacientes', id]);
   }
 
 }

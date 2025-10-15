@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 
 export interface UploadAudioResponse { id: number; message: string; }
@@ -32,6 +32,10 @@ export interface CreatePatientResponse {
   cpf: string;
   date_of_birth: string;
   phone: string;
+}
+
+export interface PatientDetail extends CreatePatientResponse {
+  doctor: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -117,6 +121,43 @@ export class ApiService {
     if (authToken) headers = headers.set('Authorization', `Token ${authToken}`);
     return this.http
       .get<DoctorProfile>(`${this.baseUrl}doctor/account/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  getPatientById(patientId: number): Observable<PatientDetail> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+
+    const params = new HttpParams().set('id', patientId.toString());
+
+    return this.http
+      .get<PatientDetail>(`${this.baseUrl}doctor/patient/`, { headers, params })
+      .pipe(catchError(this.handleError));
+  }
+
+  updatePatient(patientId: number, payload: CreatePatientRequest, csrfToken?: string): Observable<PatientDetail> {
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+    if (csrfToken) headers = headers.set('X-CSRFToken', csrfToken);
+
+    const params = new HttpParams().set('id', patientId.toString());
+
+    return this.http
+      .put<PatientDetail>(`${this.baseUrl}doctor/patient/`, payload, { headers, params })
+      .pipe(catchError(this.handleError));
+  }
+
+  deletePatient(patientId: number): Observable<void> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+
+    const params = new HttpParams().set('id', patientId.toString());
+
+    return this.http
+      .delete<void>(`${this.baseUrl}doctor/patient/`, { headers, params })
       .pipe(catchError(this.handleError));
   }
 
