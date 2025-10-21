@@ -31,6 +31,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   lastSummaryMarkdown = '';
   recordingDuration = 0;
   copyFeedback = '';
+  isEditingProntuario = false;
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -772,6 +773,75 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.status = 'Erro ao exportar prontuário.';
       this.showCopyFeedback('Falha ao gerar PDF');
     }
+  }
+
+  toggleEditProntuario() {
+    this.isEditingProntuario = !this.isEditingProntuario;
+    if (!this.isEditingProntuario) {
+      // Quando sai do modo edição sem salvar, mantém o conteúdo original
+      this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(this.lastSummaryRaw);
+    }
+  }
+
+  saveProntuarioEdits() {
+    const editableDiv = document.querySelector('.summary-content.editing') as HTMLElement;
+    if (!editableDiv) return;
+    const updatedHtml = editableDiv.innerHTML;
+    this.lastSummaryRaw = updatedHtml;
+    this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(updatedHtml);
+    // Atualiza também o markdown para que o PDF reflita as mudanças
+    this.lastSummaryMarkdown = this.htmlToMarkdown(updatedHtml);
+    this.isEditingProntuario = false;
+    this.status = 'Prontuário atualizado.';
+    this.showCopyFeedback('Alterações salvas!');
+  }
+
+  private htmlToMarkdown(html: string): string {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    let markdown = '';
+    const processNode = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || '';
+      }
+      
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as HTMLElement;
+        const tagName = element.tagName.toLowerCase();
+        const children = Array.from(element.childNodes).map(processNode).join('');
+        
+        switch (tagName) {
+          case 'h1':
+            return `# ${children}\n\n`;
+          case 'h2':
+            return `## ${children}\n\n`;
+          case 'h3':
+            return `### ${children}\n\n`;
+          case 'b':
+          case 'strong':
+            return `**${children}**`;
+          case 'i':
+          case 'em':
+            return `*${children}*`;
+          case 'li':
+            return `- ${children}\n`;
+          case 'br':
+            return '\n';
+          case 'p':
+            return `${children}\n\n`;
+          default:
+            return children;
+        }
+      }
+      
+      return '';
+    };
+    
+    markdown = Array.from(tempDiv.childNodes).map(processNode).join('');
+    // Limpa múltiplas quebras de linha consecutivas
+    return markdown.replace(/\n{3,}/g, '\n\n').trim();
   }
 
 

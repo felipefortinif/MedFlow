@@ -93,9 +93,33 @@
             <span class="copy-feedback" *ngIf="copyFeedback">{{ copyFeedback }}</span>
             <button
               type="button"
+              class="action-btn"
+              *ngIf="!isSummarizing && summaryHtml && !isEditingProntuario"
+              (click)="toggleEditProntuario()"
+            >
+              ✏️ Editar
+            </button>
+            <button
+              type="button"
+              class="action-btn save"
+              *ngIf="isEditingProntuario"
+              (click)="saveProntuarioEdits()"
+            >
+              💾 Salvar prontuário
+            </button>
+            <button
+              type="button"
+              class="action-btn cancel"
+              *ngIf="isEditingProntuario"
+              (click)="toggleEditProntuario()"
+            >
+              ❌ Cancelar
+            </button>
+            <button
+              type="button"
               class="copy-btn"
               (click)="copySummary()"
-              [disabled]="isSummarizing || !canCopySummary"
+              [disabled]="isSummarizing || !canCopySummary || isEditingProntuario"
             >
               📋 Copiar prontuário
             </button>
@@ -107,7 +131,14 @@
           <span class="dot dot-2">.</span>
           <span class="dot dot-3">.</span>
         </div>
-        <div *ngIf="!isSummarizing && summaryHtml" class="summary-content" [innerHTML]="summaryHtml"></div>
+        <div 
+          *ngIf="!isSummarizing && summaryHtml" 
+          #editableContent
+          class="summary-content" 
+          [class.editing]="isEditingProntuario"
+          [contentEditable]="isEditingProntuario"
+          [innerHTML]="summaryHtml"
+        ></div>
         <div *ngIf="!isSummarizing && !summaryHtml" class="summary-empty">Nenhum prontuário disponível no momento.</div>
       </section>
     </section>
