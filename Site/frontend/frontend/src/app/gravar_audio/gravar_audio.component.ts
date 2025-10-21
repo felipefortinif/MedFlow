@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -563,18 +564,214 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   exportSummary() {
-    if (!this.lastSummaryRaw) return;
-    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário - ${this.patientName}</title></head><body>${this.lastSummaryRaw}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (!win) {
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `prontuario-${Date.now()}.html`;
-      anchor.click();
+    if (!this.lastSummaryMarkdown && !this.lastSummaryRaw) return;
+    
+    try {
+      // Cria documento PDF em formato A4
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Configurações de margem e dimensões
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - (2 * margin);
+      let yPosition = margin;
+
+      // Função auxiliar para adicionar nova página se necessário
+      const checkPageBreak = (requiredSpace: number = 10) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // Cabeçalho do documento
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Prontuário Médico', margin, yPosition);
+      yPosition += 12;
+
+      // Linha separadora
+      doc.setDrawColor(3, 105, 161);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+
+      // Informações do paciente
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Paciente:', margin, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(this.patientName, margin + 25, yPosition);
+      yPosition += 7;
+
+      if (this.patientCpf) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('CPF:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.patientCpf, margin + 25, yPosition);
+        yPosition += 7;
+      }
+
+      if (this.patientNascimento) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Nascimento:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.patientNascimento, margin + 25, yPosition);
+        yPosition += 7;
+      }
+
+      if (this.sessionStartedLabel) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Data da consulta:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.sessionStartedLabel, margin + 40, yPosition);
+        yPosition += 7;
+      }
+
+      yPosition += 5;
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 10;
+
+      // Conteúdo do prontuário - processa markdown
+      const content = this.lastSummaryMarkdown || this.extractPlainText(this.lastSummaryRaw);
+      const lines = content.split('\n');
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          yPosition += 4;
+          continue;
+        }
+
+        checkPageBreak(15);
+
+        // Títulos H1
+        if (trimmed.startsWith('# ')) {
+          yPosition += 3;
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(3, 105, 161);
+          const text = trimmed.substring(2).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 7 + 3;
+          doc.setTextColor(0, 0, 0);
+          continue;
+        }
+
+        // Títulos H2
+        if (trimmed.startsWith('## ')) {
+          yPosition += 2;
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(3, 105, 161);
+          const text = trimmed.substring(3).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 6 + 2;
+          doc.setTextColor(0, 0, 0);
+          continue;
+        }
+
+        // Títulos H3
+        if (trimmed.startsWith('### ')) {
+          yPosition += 2;
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          const text = trimmed.substring(4).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 5.5 + 2;
+          continue;
+        }
+
+        // Itens de lista
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          const text = trimmed.substring(2).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth - 5);
+          doc.text('•', margin + 2, yPosition);
+          doc.text(wrappedText, margin + 7, yPosition);
+          yPosition += wrappedText.length * 5 + 1;
+          continue;
+        }
+
+        // Texto em negrito **texto**
+        if (trimmed.includes('**')) {
+          doc.setFontSize(11);
+          const parts = trimmed.split('**');
+          let xPos = margin;
+          
+          for (let i = 0; i < parts.length; i++) {
+            if (!parts[i]) continue;
+            
+            if (i % 2 === 1) {
+              doc.setFont('helvetica', 'bold');
+            } else {
+              doc.setFont('helvetica', 'normal');
+            }
+            
+            const wrappedText = doc.splitTextToSize(parts[i], maxWidth - (xPos - margin));
+            doc.text(wrappedText, xPos, yPosition);
+            
+            if (wrappedText.length > 1) {
+              yPosition += (wrappedText.length - 1) * 5;
+              xPos = margin;
+            } else {
+              xPos += doc.getTextWidth(parts[i]);
+            }
+          }
+          yPosition += 5;
+          continue;
+        }
+
+        // Texto normal
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const wrappedText = doc.splitTextToSize(trimmed, maxWidth);
+        doc.text(wrappedText, margin, yPosition);
+        yPosition += wrappedText.length * 5 + 2;
+      }
+
+      // Rodapé em todas as páginas
+      const totalPages = (doc as any).internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          `Página ${i} de ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+        doc.text(
+          `Gerado em ${new Date().toLocaleDateString('pt-BR')}`,
+          pageWidth - margin,
+          pageHeight - 10,
+          { align: 'right' }
+        );
+      }
+
+      // Salva o PDF
+      const fileName = `${this.patientName.replace(/\s+/g, '_')}-${this.sessionStartedLabel}.pdf`;
+      doc.save(fileName);
+      
+      this.status = 'Prontuário exportado com sucesso.';
+      this.showCopyFeedback('PDF baixado!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      this.status = 'Erro ao exportar prontuário.';
+      this.showCopyFeedback('Falha ao gerar PDF');
     }
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
 
