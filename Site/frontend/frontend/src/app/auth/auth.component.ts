@@ -27,7 +27,6 @@ export class AuthComponent {
   signupPassword = '';
   signupPasswordConfirm = '';
   // Campos adicionais necessários para cadastro completo
-  signupUsername = '';
   signupFirstName = '';
   signupLastName = '';
   signupCpf = '';
@@ -124,8 +123,8 @@ export class AuthComponent {
       return;
     }
 
-    // Validar obrigatórios conforme backend: username, password, email, cpf, crm, specialty
-    if (!this.signupUsername || !this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
+    // Validar obrigatórios conforme backend: email, password, cpf, crm, specialty
+    if (!this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
       this.error = 'Preencha todos os campos obrigatórios.';
       this.isLoading = false;
       return;
@@ -134,7 +133,6 @@ export class AuthComponent {
     try {
       const resp = await firstValueFrom(
         this.api.signup(
-          this.signupUsername,
           this.signupPassword,
           this.signupFirstName,
           this.signupLastName,

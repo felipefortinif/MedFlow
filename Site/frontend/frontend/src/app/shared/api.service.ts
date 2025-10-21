@@ -45,14 +45,14 @@ export class ApiService {
 
   constructor(private http: HttpClient) { }
 
-  login(username: string, password: string): Observable<LoginResponse> {
-    const body = { username, password };
+  login(email: string, password: string): Observable<LoginResponse> {
+    const body = { email, password };
     return this.http
       .post<LoginResponse>(`${this.baseUrl}doctor/token-auth/`, body)
       .pipe(catchError(this.handleError));
   }
 
-  signup(username: string,
+  signup(
     password: string,
     first_name: string,
     last_name: string,
@@ -62,7 +62,7 @@ export class ApiService {
     phone: string,
     crm: string,
     specialty: number): Observable<SignupResponse> {
-    const body = { username, password, first_name, last_name, email, cpf, date_of_birth, phone, crm, specialty };
+    const body = { password, first_name, last_name, email, cpf, date_of_birth, phone, crm, specialty };
     return this.http
       .post<SignupResponse>(`${this.baseUrl}doctor/account/`, body)
       .pipe(catchError(this.handleError));

@@ -10,8 +10,8 @@ import { firstValueFrom } from 'rxjs';
     selector: 'app-criar-paciente',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './criar_paciente.html',
-    styleUrls: ['./criar_paciente.css']
+    templateUrl: './criar_paciente.component.html',
+    styleUrls: ['./criar_paciente.component.css']
 })
 export class CriaPacienteComponent {
     name = '';

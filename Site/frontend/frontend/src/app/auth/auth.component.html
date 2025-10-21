@@ -61,9 +61,6 @@
     </div>
 
     <form *ngIf="mode==='signup'" (ngSubmit)="onSignup()">
-      <!-- Required by backend: username, password, email, cpf, crm, specialty -->
-      <label>Usuário (username)</label>
-      <input type="text" [(ngModel)]="signupUsername" name="signupUsername" required />
 
       <label>Primeiro nome</label>
       <input type="text" [(ngModel)]="signupFirstName" name="signupFirstName" />
