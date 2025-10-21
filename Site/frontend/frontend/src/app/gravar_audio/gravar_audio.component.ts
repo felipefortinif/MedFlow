@@ -743,7 +743,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       }
 
       // Rodapé em todas as páginas
-      const totalPages = (doc as any).internal.pages.length - 1;
+      const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
