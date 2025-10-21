@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { StateService } from '../shared/state.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../shared/api.service';
@@ -10,7 +11,7 @@ import { finalize } from 'rxjs/operators';
 @Component({
   selector: 'app-gravar-audio',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './gravar_audio.component.html',
   styleUrls: ['./gravar_audio.component.css']
 })
@@ -56,6 +57,11 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   // Dados
   private fullTranscript = '';
 
+  // Dispositivos de áudio
+  audioInputs: MediaDeviceInfo[] = [];
+  selectedDeviceId: string = '';
+  private deviceChangeHandler = () => this.refreshAudioDevices();
+
   constructor(
     private state: StateService,
     private cdr: ChangeDetectorRef,
@@ -66,6 +72,11 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.state.resetTranscript();
     this.showRecordUI = true;
+    // Inicializa lista de microfones e observa mudanças de dispositivos
+    this.refreshAudioDevices();
+    if (navigator?.mediaDevices?.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', this.deviceChangeHandler);
+    }
   }
 
   ngOnDestroy(): void {
@@ -77,6 +88,9 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.stopStream();
     this.stopRecordingTimer();
     this.clearCopyFeedback();
+    if (navigator?.mediaDevices?.removeEventListener) {
+      navigator.mediaDevices.removeEventListener('devicechange', this.deviceChangeHandler);
+    }
   }
 
   get patientName(): string {
@@ -125,7 +139,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   startRecording(): void {
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    const audioConstraints: MediaStreamConstraints = this.selectedDeviceId
+      ? { audio: { deviceId: { exact: this.selectedDeviceId } as any } }
+      : { audio: true };
+    navigator.mediaDevices.getUserMedia(audioConstraints)
       .then((stream: MediaStream) => {
         this.isRecording = true;
         this.stopRequested = false;
@@ -153,6 +170,37 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       .catch(() => {
         this.status = 'Acesso ao microfone negado.';
       });
+  }
+
+  // Recarrega a lista de microfones; tenta solicitar permissão para obter labels quando necessário
+  async refreshAudioDevices(): Promise<void> {
+    try {
+      let devices = await navigator.mediaDevices.enumerateDevices();
+      let inputs = devices.filter(d => d.kind === 'audioinput');
+      // Se labels estiverem vazios, tenta pedir permissão rapidamente para revelá-los
+      const hasLabels = inputs.some(d => !!d.label);
+      if (!hasLabels) {
+        try {
+          const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+          tmp.getTracks().forEach(t => t.stop());
+          devices = await navigator.mediaDevices.enumerateDevices();
+          inputs = devices.filter(d => d.kind === 'audioinput');
+        } catch {
+          // sem permissão, segue com IDs cegos
+        }
+      }
+      this.audioInputs = inputs;
+      // Se o selecionado sumiu, volta ao padrão
+      if (this.selectedDeviceId && !this.audioInputs.find(d => d.deviceId === this.selectedDeviceId)) {
+        this.selectedDeviceId = '';
+      }
+      if (!this.selectedDeviceId && this.audioInputs.length === 1) {
+        this.selectedDeviceId = this.audioInputs[0].deviceId;
+      }
+      try { this.cdr.detectChanges(); } catch { }
+    } catch {
+      // silencioso
+    }
   }
 
   stopRecording() {

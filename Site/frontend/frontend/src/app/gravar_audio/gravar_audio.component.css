@@ -131,6 +131,79 @@
 .meta-panel .export:not(:disabled):hover {
   background: rgba(3, 105, 161, 0.1);
 }
+
+/* Seletor de microfone no painel lateral */
+.meta-row.mic-selector {
+  padding-bottom: 16px;
+}
+.mic-control {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.mic-dropdown {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 75%;
+  font-size: 0.85rem;
+  color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%230369a1'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+.mic-dropdown:hover:not(:disabled) {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.08);
+}
+.mic-dropdown:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+.mic-dropdown:disabled {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.refresh-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  background: #fff;
+  color: #0369a1;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.refresh-btn:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.08);
+  transform: rotate(45deg);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+}
+.refresh-btn:active:not(:disabled) {
+  transform: rotate(90deg);
+}
+.refresh-btn:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .record-area {
   margin-top: 0;
   display: flex;

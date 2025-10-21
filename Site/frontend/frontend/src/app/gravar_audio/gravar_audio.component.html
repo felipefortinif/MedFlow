@@ -37,6 +37,18 @@
           </span>
         </span>
       </div>
+      <div class="meta-row mic-selector">
+        <span class="label">🎤 Microfone</span>
+        <div class="mic-control">
+          <select class="mic-dropdown" [(ngModel)]="selectedDeviceId" [disabled]="isRecording">
+            <option value="">Padrão do sistema</option>
+            <option *ngFor="let d of audioInputs" [value]="d.deviceId">{{ d.label || 'Microfone' }}</option>
+          </select>
+          <button type="button" class="refresh-btn" (click)="refreshAudioDevices()" [disabled]="isRecording" title="Atualizar lista de microfones">
+            🔄
+          </button>
+        </div>
+      </div>
       <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
         ⬇️ Exportar prontuário
       </button>
