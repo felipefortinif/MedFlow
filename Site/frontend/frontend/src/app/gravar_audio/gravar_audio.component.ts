@@ -466,7 +466,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.summaryHtml = '';
     this.lastSummaryRaw = '';
     this.lastSummaryMarkdown = '';
-  this.copyFeedback = '';
+    this.copyFeedback = '';
     try {
       const resp = await firstValueFrom(
         this.api.summarizeTranscript(text, this.getCSRFToken())
