@@ -763,7 +763,11 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       }
 
       // Salva o PDF
-      const fileName = `${this.patientName.replace(/\s+/g, '_')}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      const safePatientName = this.patientName
+        .trim()
+        .replace(/[<>:"/\\|?*\s]+/g, '_')
+        .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+      const fileName = `${safePatientName}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
       doc.save(fileName);
       
       this.status = 'Prontuário exportado com sucesso.';
