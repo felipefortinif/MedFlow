@@ -3,7 +3,7 @@
     "name": "Medicina da Dor",
     "description": "Template completo para consultas de medicina da dor",
     "topics": [
-      "Indicação(medico que indicou)",
+      "Indicação(médico que indicou)",
       "Queixa principal",
       "História da moléstia atual",
       "Neuro-psíquico",
@@ -15,14 +15,14 @@
       "Hospitalizações, acidentes, traumatismos e cirurgias",
       "Alergias",
       "Imunizações",
-      "Historia ocupacional e familiar",
+      "História ocupacional e familiar",
       "Outras drogas",
       "Estilo de vida",
-      "Exercicio fisico",
-      "Frequência do exercicio",
+      "Exercício físico",
+      "Frequência do exercício",
       "Queixas da vida sexual, sono, intestino"
     ],
-    "output_format": "### Indicação(medico que indicou)\n<preencha aqui, use \"Dr. Nome\" ou \"Não informado\">\n\n### Queixa principal\n<preencha aqui ou \"Não informado\">\n\n### História da moléstia atual\n<preencha aqui ou \"Não informado\">\n\n### Neuro-psíquico\n<preencha aqui ou \"Não informado\">\n\n### Sistema locomotor\n<preencha aqui ou \"Não informado\">\n\n### Estado geral de saúde\n<preencha aqui ou \"Não informado\">\n\n### Doenças adulto\n<liste doenças do adulto citadas; se nenhuma, \"Não informado\">\n\n### Outras doenças\n<liste outras condições mencionadas; se nenhuma, \"Não informado\">\n\n### Medicações em uso\n<liste nome/dose/frequência se mencionados; se nenhuma, \"Não informado\">\n\n### Hospitalizações, acidentes, traumatismos e cirurgias\n<liste eventos relevantes (com data/local se citados); se nega, registre; caso contrário, \"Não informado\">\n\n### Alergias\n<liste alergias e reações; se nega, registre; caso contrário, \"Não informado\">\n\n### Imunizações\n<liste vacinas e datas se citadas; se não houver, \"Não informado\">\n\n### Historia ocupacional e familiar\n<resuma o que for mencionado (trabalho, exposições, antecedentes familiares); se nada constar, \"Não informado\">\n\n### Outras drogas\n<registre uso/negação de álcool, tabaco, ilícitas etc. conforme a transcrição; se nada constar, \"Não informado\">\n\n### Estilo de vida\n<ex.: dieta, rotina, hábitos se citados; se nada constar, \"Não informado\">\n\n### Exercicio fisico\n<tipo, duração, frequência se citados; se nada constar, \"Não informado\">\n\n### Frequência do exercicio\n<detalhe a frequência se mencionada separadamente; caso contrário, \"Não informado\">\n\n### Queixas da vida sexual, sono, intestino\n<registre o que foi dito para cada aspecto; se nada constar, \"Não informado\">"
+    "output_format": "### Indicação(médico que indicou)\n<preencha aqui, use \"Dr. Nome\" ou \"Não informado\">\n\n### Queixa principal\n<preencha aqui ou \"Não informado\">\n\n### História da moléstia atual\n<preencha aqui ou \"Não informado\">\n\n### Neuro-psíquico\n<preencha aqui ou \"Não informado\">\n\n### Sistema locomotor\n<preencha aqui ou \"Não informado\">\n\n### Estado geral de saúde\n<preencha aqui ou \"Não informado\">\n\n### Doenças adulto\n<liste doenças do adulto citadas; se nenhuma, \"Não informado\">\n\n### Outras doenças\n<liste outras condições mencionadas; se nenhuma, \"Não informado\">\n\n### Medicações em uso\n<liste nome/dose/frequência se mencionados; se nenhuma, \"Não informado\">\n\n### Hospitalizações, acidentes, traumatismos e cirurgias\n<liste eventos relevantes (com data/local se citados); se nega, registre; caso contrário, \"Não informado\">\n\n### Alergias\n<liste alergias e reações; se nega, registre; caso contrário, \"Não informado\">\n\n### Imunizações\n<liste vacinas e datas se citadas; se não houver, \"Não informado\">\n\n### História ocupacional e familiar\n<resuma o que for mencionado (trabalho, exposições, antecedentes familiares); se nada constar, \"Não informado\">\n\n### Outras drogas\n<registre uso/negação de álcool, tabaco, ilícitas etc. conforme a transcrição; se nada constar, \"Não informado\">\n\n### Estilo de vida\n<ex.: dieta, rotina, hábitos se citados; se nada constar, \"Não informado\">\n\n### Exercício físico\n<tipo, duração, frequência se citados; se nada constar, \"Não informado\">\n\n### Frequência do exercício\n<detalhe a frequência se mencionada separadamente; caso contrário, \"Não informado\">\n\n### Queixas da vida sexual, sono, intestino\n<registre o que foi dito para cada aspecto; se nada constar, \"Não informado\">"
   },
   "cirurgia": {
     "name": "Cirurgia",
