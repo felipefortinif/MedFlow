@@ -1,22 +1,25 @@
 import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { StateService } from '../shared/state.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-gravar-audio',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './gravar_audio.component.html',
   styleUrls: ['./gravar_audio.component.css']
 })
 export class GravarAudioComponent implements OnInit, OnDestroy {
   status = 'Pronto para gravar';
   isRecording = false;
+  showRecordUI = false;
   showGenerate = false;
   canSummarize = false;
   summaryHtml: SafeHtml = '';
@@ -25,7 +28,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   voiceScale = 1;
   sessionStartedAt: Date | null = null;
   lastSummaryRaw = '';
+  lastSummaryMarkdown = '';
   recordingDuration = 0;
+  copyFeedback = '';
+  isEditingProntuario = false;
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -48,9 +54,15 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   private analyserData: Uint8Array<ArrayBuffer> | null = null;
   private analyserFrame: number | null = null;
   private recordingTicker: ReturnType<typeof setInterval> | null = null;
+  private copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Dados
   private fullTranscript = '';
+
+  // Dispositivos de áudio
+  audioInputs: MediaDeviceInfo[] = [];
+  selectedDeviceId: string = '';
+  private deviceChangeHandler = () => this.refreshAudioDevices();
 
   constructor(
     private state: StateService,
@@ -61,6 +73,12 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.state.resetTranscript();
+    this.showRecordUI = true;
+    // Inicializa lista de microfones e observa mudanças de dispositivos
+    this.refreshAudioDevices();
+    if (navigator?.mediaDevices?.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', this.deviceChangeHandler);
+    }
   }
 
   ngOnDestroy(): void {
@@ -71,6 +89,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.flushFinalBatch();
     this.stopStream();
     this.stopRecordingTimer();
+    this.clearCopyFeedback();
+    if (navigator?.mediaDevices?.removeEventListener) {
+      navigator.mediaDevices.removeEventListener('devicechange', this.deviceChangeHandler);
+    }
   }
 
   get patientName(): string {
@@ -119,7 +141,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   startRecording(): void {
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    const audioConstraints: MediaStreamConstraints = this.selectedDeviceId
+      ? { audio: { deviceId: { exact: this.selectedDeviceId } as any } }
+      : { audio: true };
+    navigator.mediaDevices.getUserMedia(audioConstraints)
       .then((stream: MediaStream) => {
         this.isRecording = true;
         this.stopRequested = false;
@@ -128,7 +153,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.status = 'Gravando...';
         this.summaryHtml = '';
         this.lastSummaryRaw = '';
+        this.lastSummaryMarkdown = '';
+        this.copyFeedback = '';
         this.canSummarize = false;
+        this.showRecordUI = true;
         this.showGenerate = false;
         this.fullTranscript = '';
         this.timedChunks = [];
@@ -144,6 +172,37 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       .catch(() => {
         this.status = 'Acesso ao microfone negado.';
       });
+  }
+
+  // Recarrega a lista de microfones; tenta solicitar permissão para obter labels quando necessário
+  async refreshAudioDevices(): Promise<void> {
+    try {
+      let devices = await navigator.mediaDevices.enumerateDevices();
+      let inputs = devices.filter(d => d.kind === 'audioinput');
+      // Se labels estiverem vazios, tenta pedir permissão rapidamente para revelá-los
+      const hasLabels = inputs.some(d => !!d.label);
+      if (!hasLabels) {
+        try {
+          const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+          tmp.getTracks().forEach(t => t.stop());
+          devices = await navigator.mediaDevices.enumerateDevices();
+          inputs = devices.filter(d => d.kind === 'audioinput');
+        } catch {
+          // sem permissão, segue com IDs cegos
+        }
+      }
+      this.audioInputs = inputs;
+      // Se o selecionado sumiu, volta ao padrão
+      if (this.selectedDeviceId && !this.audioInputs.find(d => d.deviceId === this.selectedDeviceId)) {
+        this.selectedDeviceId = '';
+      }
+      if (!this.selectedDeviceId && this.audioInputs.length === 1) {
+        this.selectedDeviceId = this.audioInputs[0].deviceId;
+      }
+      try { this.cdr.detectChanges(); } catch { }
+    } catch {
+      // silencioso
+    }
   }
 
   stopRecording() {
@@ -401,18 +460,22 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.stopRecording();
     }
     this.showGenerate = false;
+    this.showRecordUI = false;
     this.isSummarizing = true;
     this.status = 'Gerando prontuário...';
     this.summaryHtml = '';
     this.lastSummaryRaw = '';
+    this.lastSummaryMarkdown = '';
+    this.copyFeedback = '';
     try {
       const resp = await firstValueFrom(
         this.api.summarizeTranscript(text, this.getCSRFToken())
       );
       if (resp?.summary) {
         const html = this.markdownToHtml(resp.summary);
-        this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
-        this.lastSummaryRaw = html;
+  this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+  this.lastSummaryRaw = html;
+  this.lastSummaryMarkdown = resp.summary.trim();
         this.status = 'Prontuário gerado.';
       } else {
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Nenhum resumo retornado.');
@@ -421,6 +484,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     } catch (_err) {
       this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Erro ao gerar prontuário.');
       this.lastSummaryRaw = '';
+      this.lastSummaryMarkdown = '';
       this.status = 'Erro ao gerar prontuário.';
     } finally {
       this.isSummarizing = false;
@@ -428,19 +492,360 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     }
   }
 
-  exportSummary() {
-    if (!this.lastSummaryRaw) return;
-    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prontuário - ${this.patientName}</title></head><body>${this.lastSummaryRaw}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (!win) {
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `prontuario-${Date.now()}.html`;
-      anchor.click();
+  get canCopySummary(): boolean {
+    return !!(this.lastSummaryMarkdown?.trim() || this.lastSummaryRaw?.trim());
+  }
+
+  async copySummary(): Promise<void> {
+    if (!this.canCopySummary) return;
+    const textToCopy = this.lastSummaryMarkdown?.trim() || this.extractPlainText(this.lastSummaryRaw);
+    if (!textToCopy) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        this.fallbackCopy(textToCopy);
+      }
+      this.status = 'Prontuário copiado para a área de transferência.';
+      this.showCopyFeedback('Copiado!');
+    } catch {
+      try {
+        this.fallbackCopy(textToCopy);
+        this.status = 'Prontuário copiado para a área de transferência.';
+        this.showCopyFeedback('Copiado!');
+      } catch {
+        this.status = 'Não foi possível copiar o prontuário.';
+        this.showCopyFeedback('Falha ao copiar');
+      }
     }
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  private extractPlainText(html: string): string {
+    if (!html) return '';
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    return el.textContent?.trim() ?? '';
+  }
+
+  private fallbackCopy(text: string) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!ok) {
+      throw new Error('copy command failed');
+    }
+  }
+
+  private showCopyFeedback(message: string) {
+    this.copyFeedback = message;
+    if (this.copyFeedbackTimer) {
+      clearTimeout(this.copyFeedbackTimer);
+    }
+    this.copyFeedbackTimer = setTimeout(() => {
+      this.copyFeedback = '';
+      this.copyFeedbackTimer = null;
+      try { this.cdr.detectChanges(); } catch { }
+    }, 2000);
+    try { this.cdr.detectChanges(); } catch { }
+  }
+
+  private clearCopyFeedback() {
+    if (this.copyFeedbackTimer) {
+      clearTimeout(this.copyFeedbackTimer);
+      this.copyFeedbackTimer = null;
+    }
+    this.copyFeedback = '';
+  }
+
+  exportSummary() {
+    if (!this.lastSummaryMarkdown && !this.lastSummaryRaw) return;
+    
+    try {
+      // Cria documento PDF em formato A4
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Configurações de margem e dimensões
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - (2 * margin);
+      let yPosition = margin;
+
+      // Função auxiliar para adicionar nova página se necessário
+      const checkPageBreak = (requiredSpace: number = 10) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // Cabeçalho do documento
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Prontuário Médico', margin, yPosition);
+      yPosition += 12;
+
+      // Linha separadora
+      doc.setDrawColor(3, 105, 161);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+
+      // Informações do paciente
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Paciente:', margin, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(this.patientName, margin + 25, yPosition);
+      yPosition += 7;
+
+      if (this.patientCpf) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('CPF:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.patientCpf, margin + 25, yPosition);
+        yPosition += 7;
+      }
+
+      if (this.patientNascimento) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Nascimento:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.patientNascimento, margin + 25, yPosition);
+        yPosition += 7;
+      }
+
+      if (this.sessionStartedLabel) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Data da consulta:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(this.sessionStartedLabel, margin + 40, yPosition);
+        yPosition += 7;
+      }
+
+      yPosition += 5;
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 10;
+
+      // Conteúdo do prontuário - processa markdown
+      const content = this.lastSummaryMarkdown || this.extractPlainText(this.lastSummaryRaw);
+      const lines = content.split('\n');
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          yPosition += 4;
+          continue;
+        }
+
+        checkPageBreak(15);
+
+        // Títulos H1
+        if (trimmed.startsWith('# ')) {
+          yPosition += 3;
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(3, 105, 161);
+          const text = trimmed.substring(2).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 7 + 3;
+          doc.setTextColor(0, 0, 0);
+          continue;
+        }
+
+        // Títulos H2
+        if (trimmed.startsWith('## ')) {
+          yPosition += 2;
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(3, 105, 161);
+          const text = trimmed.substring(3).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 6 + 2;
+          doc.setTextColor(0, 0, 0);
+          continue;
+        }
+
+        // Títulos H3
+        if (trimmed.startsWith('### ')) {
+          yPosition += 2;
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          const text = trimmed.substring(4).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth);
+          doc.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 5.5 + 2;
+          continue;
+        }
+
+        // Itens de lista
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          const text = trimmed.substring(2).trim();
+          const wrappedText = doc.splitTextToSize(text, maxWidth - 5);
+          doc.text('•', margin + 2, yPosition);
+          doc.text(wrappedText, margin + 7, yPosition);
+          yPosition += wrappedText.length * 5 + 1;
+          continue;
+        }
+
+        // Texto em negrito **texto**
+        if (trimmed.includes('**')) {
+          doc.setFontSize(11);
+          const parts = trimmed.split('**');
+          let xPos = margin;
+          
+          for (let i = 0; i < parts.length; i++) {
+            if (!parts[i]) continue;
+            
+            if (i % 2 === 1) {
+              doc.setFont('helvetica', 'bold');
+            } else {
+              doc.setFont('helvetica', 'normal');
+            }
+            
+            const wrappedText = doc.splitTextToSize(parts[i], maxWidth - (xPos - margin));
+            doc.text(wrappedText, xPos, yPosition);
+            
+            if (wrappedText.length > 1) {
+              yPosition += (wrappedText.length - 1) * 5;
+              xPos = margin;
+            } else {
+              xPos += doc.getTextWidth(parts[i]);
+            }
+          }
+          yPosition += 5;
+          continue;
+        }
+
+        // Texto normal
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const wrappedText = doc.splitTextToSize(trimmed, maxWidth);
+        doc.text(wrappedText, margin, yPosition);
+        yPosition += wrappedText.length * 5 + 2;
+      }
+
+      // Rodapé em todas as páginas
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          `Página ${i} de ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+        doc.text(
+          `Gerado em ${new Date().toLocaleDateString('pt-BR')}`,
+          pageWidth - margin,
+          pageHeight - 10,
+          { align: 'right' }
+        );
+      }
+
+      // Salva o PDF
+      const safePatientName = this.patientName
+        .trim()
+        .replace(/[<>:"/\\|?*\s]+/g, '_')
+        .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+      const fileName = `${safePatientName}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+      
+      this.status = 'Prontuário exportado com sucesso.';
+      this.showCopyFeedback('PDF baixado!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      this.status = 'Erro ao exportar prontuário.';
+      this.showCopyFeedback('Falha ao gerar PDF');
+    }
+  }
+
+  toggleEditProntuario() {
+    this.isEditingProntuario = !this.isEditingProntuario;
+    if (!this.isEditingProntuario) {
+      // Quando sai do modo edição sem salvar, mantém o conteúdo original
+      this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(this.lastSummaryRaw);
+    }
+  }
+
+  saveProntuarioEdits() {
+    const editableDiv = document.querySelector('.summary-content.editing') as HTMLElement;
+    if (!editableDiv) return;
+    const updatedHtml = editableDiv.innerHTML;
+    this.lastSummaryRaw = updatedHtml;
+    this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(updatedHtml);
+    // Atualiza também o markdown para que o PDF reflita as mudanças
+    this.lastSummaryMarkdown = this.htmlToMarkdown(updatedHtml);
+    this.isEditingProntuario = false;
+    this.status = 'Prontuário atualizado.';
+    this.showCopyFeedback('Alterações salvas!');
+  }
+
+  private htmlToMarkdown(html: string): string {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    let markdown = '';
+    const processNode = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || '';
+      }
+      
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as HTMLElement;
+        const tagName = element.tagName.toLowerCase();
+        const children = Array.from(element.childNodes).map(processNode).join('');
+        
+        switch (tagName) {
+          case 'h1':
+            return `# ${children}\n\n`;
+          case 'h2':
+            return `## ${children}\n\n`;
+          case 'h3':
+            return `### ${children}\n\n`;
+          case 'b':
+          case 'strong':
+            return `**${children}**`;
+          case 'i':
+          case 'em':
+            return `*${children}*`;
+          case 'li':
+            return `- ${children}\n`;
+          case 'br':
+            return '\n';
+          case 'p':
+            return `${children}\n\n`;
+          default:
+            return children;
+        }
+      }
+      
+      return '';
+    };
+    
+    markdown = Array.from(tempDiv.childNodes).map(processNode).join('');
+    // Limpa múltiplas quebras de linha consecutivas
+    return markdown.replace(/\n{3,}/g, '\n\n').trim();
   }
 
 
