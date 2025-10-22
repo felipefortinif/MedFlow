@@ -8,6 +8,7 @@ import { ApiService } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { jsPDF } from 'jspdf';
+import { formatLocalDate, formatDate } from '../shared/date.utils';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -105,21 +106,12 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   get patientNascimento(): string | null {
-    const nascimento = this.state.paciente()?.nascimento;
-    if (!nascimento) return null;
-    try {
-      return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(nascimento));
-    } catch {
-      return nascimento;
-    }
+    return formatLocalDate(this.state.paciente()?.nascimento);
   }
 
   get sessionStartedLabel(): string | null {
     if (!this.sessionStartedAt) return null;
-    return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(this.sessionStartedAt);
+    return formatDate(this.sessionStartedAt);
   }
 
   get statusChip() {

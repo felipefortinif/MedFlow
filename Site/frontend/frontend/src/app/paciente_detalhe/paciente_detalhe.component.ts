@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService, CreatePatientRequest, PatientDetail } from '../shared/api.service';
+import { StateService } from '../shared/state.service';
 
 @Component({
   selector: 'app-paciente-detalhe',
@@ -33,6 +34,7 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private stateService: StateService,
   ) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
@@ -206,6 +208,20 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
   campoInvalido(controlName: string): boolean {
     const control = this.form.get(controlName);
     return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  iniciarNovaConsulta(): void {
+    if (!this.paciente) return;
+    
+    // Set patient data in StateService
+    this.stateService.setPaciente({
+      nome: this.paciente.name,
+      cpf: this.paciente.cpf || '',
+      nascimento: this.paciente.date_of_birth || ''
+    });
+    
+    // Navigate to recording screen
+    this.router.navigate(['/gravar-audio']);
   }
 
   private populateForm(paciente: PatientDetail): void {

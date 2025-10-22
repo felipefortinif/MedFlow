@@ -72,7 +72,7 @@
       </article>
     </section>
 
-    <button type="button" class="nova-consulta" [routerLink]="['/gravar-audio']" [disabled]="deleting || saving">
+    <button type="button" class="nova-consulta" (click)="iniciarNovaConsulta()" [disabled]="deleting || saving">
       Nova consulta
     </button>
   </ng-container>
