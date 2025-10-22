@@ -1,32 +1,60 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { ApiService, Patient } from '../shared/api.service';
 
 interface PacienteItem {
+  id: number;
   nome: string;
-  cpf: string;
-  nascimento?: string;
 }
 
 @Component({
   selector: 'app-pacientes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.css']
 })
-export class PacientesComponent {
-  pacientes: PacienteItem[] = [
-    { nome: 'Ana Paula', cpf: '123.456.789-00', nascimento: '1990-04-12' },
-    { nome: 'Bruno Silva', cpf: '987.654.321-00', nascimento: '1985-09-30' },
-    { nome: 'Carlos Souza', cpf: '321.654.987-00', nascimento: '1978-02-18' },
-    { nome: 'Daniela Rocha', cpf: '111.222.333-44', nascimento: '1995-12-05' },
-  ];
+export class PacientesComponent implements OnInit {
+  pacientes: PacienteItem[] = [];
+  loading = false;
+  error = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private api: ApiService) { }
+
+  ngOnInit(): void {
+    this.carregarPacientes();
+  }
+
+  carregarPacientes() {
+    this.loading = true;
+    this.error = '';
+    this.api.getPatientsList().subscribe({
+      next: (list: Patient[]) => {
+        this.pacientes = (list || []).map(p => ({
+          id: p.id,
+          nome: p.name
+        }));
+        this.loading = false;
+      },
+      error: (err) => {
+        if (err.status === 401) {
+          this.error = 'Não autorizado. Faça login novamente.';
+          this.router.navigateByUrl('/auth');
+        } else {
+          this.error = 'Falha ao carregar pacientes.';
+        }
+        this.loading = false;
+      }
+    });
+  }
 
   adicionarPaciente() {
-    // Leva para a tela de adicionar paciente
-    this.router.navigateByUrl('/adicionar-paciente');
+    this.router.navigate(['/criar-paciente']);
   }
+
+  abrirPaciente(id: number) {
+    this.router.navigate(['/pacientes', id]);
+  }
+
 }

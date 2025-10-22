@@ -20,7 +20,8 @@ def password_reset_token_created(sender, instance, reset_password_token, **kwarg
     # send an e-mail to the user
     context = {
     'current_user': reset_password_token.user,
-    'username': reset_password_token.user.username,
+    'First_Name': reset_password_token.user.first_name,
+    'Last_Name': reset_password_token.user.last_name,
     'email': reset_password_token.user.email,
     'token': reset_password_token.key,
     }

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import { ApiService, LoginResponse } from '../shared/api.service';
+import { ApiService, DoctorProfile, LoginResponse } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -27,7 +27,6 @@ export class AuthComponent {
   signupPassword = '';
   signupPasswordConfirm = '';
   // Campos adicionais necessários para cadastro completo
-  signupUsername = '';
   signupFirstName = '';
   signupLastName = '';
   signupCpf = '';
@@ -86,6 +85,14 @@ export class AuthComponent {
       if (resp && (resp as LoginResponse).token) {
         // Guarde o token (Bearer/Token) – backend usa DRF Token
         localStorage.setItem('auth_token', (resp as LoginResponse).token);
+        try {
+          const profile = await firstValueFrom(this.api.getDoctorProfile());
+          if (profile && typeof profile.id === 'number') {
+            localStorage.setItem('doctor_id', String(profile.id));
+          }
+        } catch {
+          // se falhar, mantém fluxo normal
+        }
         // Opcional: prefixo para header Authorization em chamadas futuras
         // Ex.: 'Token ' + token
         const target = this.returnUrl || '/pacientes';
@@ -95,11 +102,11 @@ export class AuthComponent {
       }
     } catch (e) {
       // DRF envia 401 com body {msg: 'Login ou Senha Inválidos.'}
-        let msg = 'Falha no login';
-        if (e && typeof e === 'object') {
-          const anyErr = e as { error?: any; message?: string };
-          msg = anyErr?.error?.msg || anyErr?.message || msg;
-        }
+      let msg = 'Falha no login';
+      if (e && typeof e === 'object') {
+        const anyErr = e as { error?: any; message?: string };
+        msg = anyErr?.error?.msg || anyErr?.message || msg;
+      }
       this.error = msg;
     } finally {
       this.isLoading = false;
@@ -116,8 +123,8 @@ export class AuthComponent {
       return;
     }
 
-    // Validar obrigatórios conforme backend: username, password, email, cpf, crm, specialty
-    if (!this.signupUsername || !this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
+    // Validar obrigatórios conforme backend: email, password, cpf, crm, specialty
+    if (!this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
       this.error = 'Preencha todos os campos obrigatórios.';
       this.isLoading = false;
       return;
@@ -126,7 +133,6 @@ export class AuthComponent {
     try {
       const resp = await firstValueFrom(
         this.api.signup(
-          this.signupUsername,
           this.signupPassword,
           this.signupFirstName,
           this.signupLastName,
@@ -167,24 +173,24 @@ export class AuthComponent {
         this.forgotError = 'Informe o e-mail.';
         return;
       }
-        const resp = await firstValueFrom(this.api.passwordReset(this.forgotEmail));
-        if (resp.status === 200) {
-          this.forgotMessage = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
-          // guarda o email para referência (não limpar ainda)
-          sessionStorage.setItem('reset_email', this.forgotEmail);
-          this.forgotStep = 2; // avançar para etapa de token
-        }
+      const resp = await firstValueFrom(this.api.passwordReset(this.forgotEmail));
+      if (resp.status === 200) {
+        this.forgotMessage = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
+        // guarda o email para referência (não limpar ainda)
+        sessionStorage.setItem('reset_email', this.forgotEmail);
+        this.forgotStep = 2; // avançar para etapa de token
+      }
     } catch (e) {
-        // Pode retornar 400 se e-mail não existir
-        let msg = 'Falha ao solicitar redefinição.';
-        if (e && typeof e === 'object') {
-          const anyErr = e as { status?: number; error?: any; message?: string };
-          if (anyErr?.status === 400) {
-            msg = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
-          } 
-          this.forgotStep = 2; // avançar para etapa de token
+      // Pode retornar 400 se e-mail não existir
+      let msg = 'Falha ao solicitar redefinição.';
+      if (e && typeof e === 'object') {
+        const anyErr = e as { status?: number; error?: any; message?: string };
+        if (anyErr?.status === 400) {
+          msg = 'Enviamos um token para o seu e-mail. Verifique sua caixa de entrada.';
         }
-        this.forgotMessage = msg;
+        this.forgotStep = 2; // avançar para etapa de token
+      }
+      this.forgotMessage = msg;
     } finally {
       this.isLoading = false;
     }
@@ -215,7 +221,7 @@ export class AuthComponent {
         this.forgotError = 'Falha ao validar token.';
       }
     } catch (e: any) {
-      this.forgotError =  'Falha ao validar token.';
+      this.forgotError = 'Falha ao validar token.';
     } finally {
       this.isLoading = false;
     }

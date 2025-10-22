@@ -21,6 +21,6 @@ class Prontuarios(models.Model):
         
         
     def __str__(self):
-        
-        rpr = "prontuarios of Dr. " + self.doctor.username + " for patient " + self.patient.name + ": "
+
+        rpr = "prontuarios of Dr. " + self.doctor.user.first_name + " " + self.doctor.user.last_name + " for patient " + self.patient.name + ": "
         return rpr + self.prontuarios
