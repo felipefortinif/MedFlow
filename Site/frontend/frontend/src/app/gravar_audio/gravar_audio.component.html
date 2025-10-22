@@ -49,6 +49,13 @@
           </button>
         </div>
       </div>
+      <div class="meta-row">
+        <span class="label">📋 Especialidade</span>
+        <select class="specialty-dropdown" [(ngModel)]="selectedSpecialty" [disabled]="isRecording || isSummarizing">
+          <option value="medicina_da_dor">Medicina da Dor</option>
+          <option value="cirurgia">Cirurgia</option>
+        </select>
+      </div>
       <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
         ⬇️ Exportar prontuário
       </button>

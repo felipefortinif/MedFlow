@@ -75,8 +75,8 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
-  summarizeTranscript(transcript: string, CSRFToken: string): Observable<SummarizeResponse> {
-    const body = { transcript };
+  summarizeTranscript(transcript: string, CSRFToken: string, specialty: string = 'medicina_da_dor'): Observable<SummarizeResponse> {
+    const body = { transcript, specialty };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
     return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
       .pipe(catchError(this.handleError));

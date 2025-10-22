@@ -32,6 +32,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   recordingDuration = 0;
   copyFeedback = '';
   isEditingProntuario = false;
+  selectedSpecialty = 'medicina_da_dor'; // Default specialty
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -469,7 +470,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.copyFeedback = '';
     try {
       const resp = await firstValueFrom(
-        this.api.summarizeTranscript(text, this.getCSRFToken())
+        this.api.summarizeTranscript(text, this.getCSRFToken(), this.selectedSpecialty)
       );
       if (resp?.summary) {
         const html = this.markdownToHtml(resp.summary);

@@ -1,0 +1,41 @@
+{
+  "medicina_da_dor": {
+    "name": "Medicina da Dor",
+    "description": "Template completo para consultas de medicina da dor",
+    "topics": [
+      "Nome",
+      "Indicação(medico que indicou)",
+      "Queixa principal",
+      "História da moléstia atual",
+      "Neuro-psíquico",
+      "Sistema locomotor",
+      "Estado geral de saúde",
+      "Doenças adulto",
+      "Outras doenças",
+      "Medicações em uso",
+      "Hospitalizações, acidentes, traumatismos e cirurgias",
+      "Alergias",
+      "Imunizações",
+      "Historia ocupacional e familiar",
+      "Outras drogas",
+      "Estilo de vida",
+      "Exercicio fisico",
+      "Frequência do exercicio",
+      "Queixas da vida sexual, sono, intestino"
+    ],
+    "output_format": "### Nome\n<preencha aqui ou \"Não informado\">\n\n### Indicação(medico que indicou)\n<preencha aqui, use \"Dr. Nome\" ou \"Não informado\">\n\n### Queixa principal\n<preencha aqui ou \"Não informado\">\n\n### História da moléstia atual\n<preencha aqui ou \"Não informado\">\n\n### Neuro-psíquico\n<preencha aqui ou \"Não informado\">\n\n### Sistema locomotor\n<preencha aqui ou \"Não informado\">\n\n### Estado geral de saúde\n<preencha aqui ou \"Não informado\">\n\n### Doenças adulto\n<liste doenças do adulto citadas; se nenhuma, \"Não informado\">\n\n### Outras doenças\n<liste outras condições mencionadas; se nenhuma, \"Não informado\">\n\n### Medicações em uso\n<liste nome/dose/frequência se mencionados; se nenhuma, \"Não informado\">\n\n### Hospitalizações, acidentes, traumatismos e cirurgias\n<liste eventos relevantes (com data/local se citados); se nega, registre; caso contrário, \"Não informado\">\n\n### Alergias\n<liste alergias e reações; se nega, registre; caso contrário, \"Não informado\">\n\n### Imunizações\n<liste vacinas e datas se citadas; se não houver, \"Não informado\">\n\n### Historia ocupacional e familiar\n<resuma o que for mencionado (trabalho, exposições, antecedentes familiares); se nada constar, \"Não informado\">\n\n### Outras drogas\n<registre uso/negação de álcool, tabaco, ilícitas etc. conforme a transcrição; se nada constar, \"Não informado\">\n\n### Estilo de vida\n<ex.: dieta, rotina, hábitos se citados; se nada constar, \"Não informado\">\n\n### Exercicio fisico\n<tipo, duração, frequência se citados; se nada constar, \"Não informado\">\n\n### Frequência do exercicio\n<detalhe a frequência se mencionada separadamente; caso contrário, \"Não informado\">\n\n### Queixas da vida sexual, sono, intestino\n<registre o que foi dito para cada aspecto; se nada constar, \"Não informado\">"
+  },
+  "cirurgia": {
+    "name": "Cirurgia",
+    "description": "Template focado para consultas pré-cirúrgicas",
+    "topics": [
+      "Nome",
+      "Queixa principal",
+      "História da doença atual",
+      "Alergia",
+      "Doenças associadas",
+      "Cirurgias prévias"
+    ],
+    "output_format": "### Nome\n<preencha aqui ou \"Não informado\">\n\n### Queixa principal\n<motivo do paciente estar ali; caso nao haja, escreva \"Não informado\">\n\n### História da doença atual\n<tudo relacionado a queixa principal; caso nao haja, escreva \"Não informado\">\n\n### Alergia\n<preencha aqui ou \"Não informado\">\n\n### Doenças associadas\n<liste todas as doenças citadas (podem ou não interferir no tratamento) e inclua tratamentos/medicações atuais quando mencionados; caso não haja, escreva \"Não informado\">\n\n### Cirurgias prévias\n<liste as cirurgias já realizadas; se houver negação explícita, registre; caso contrário, escreva \"Não informado\">"
+  }
+}
