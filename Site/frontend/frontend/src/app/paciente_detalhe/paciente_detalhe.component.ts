@@ -5,11 +5,12 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService, CreatePatientRequest, PatientDetail } from '../shared/api.service';
 import { StateService } from '../shared/state.service';
+import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-paciente-detalhe',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './paciente_detalhe.component.html',
   styleUrls: ['./paciente_detalhe.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

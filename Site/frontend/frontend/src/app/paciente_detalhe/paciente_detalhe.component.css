@@ -6,6 +6,7 @@
   --primary: #215732;
   display: block;
   padding: 2rem;
+  padding-left: calc(220px + 2rem);
   background: var(--bg);
   min-height: 100vh;
 }

@@ -5,11 +5,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ApiService, DoctorProfile } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
+import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 
 @Component({
     selector: 'app-criar-paciente',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, SidebarComponent],
     templateUrl: './criar_paciente.component.html',
     styleUrls: ['./criar_paciente.component.css']
 })
