@@ -1,6 +1,6 @@
 :host {
-  --bg: #388351;
-  --card: #e2e4e3;
+  --bg: #f5f7fa;
+  --card: #ffffff;
   --text: #171718;
   --muted: #9ca3af;
   --primary: #215732;
@@ -25,7 +25,8 @@
   background: var(--card);
   padding: 20px 24px;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+  border: 1px solid #e5e7eb;
 }
 
 .topbar h1 {
@@ -62,12 +63,12 @@
   gap: 12px;
   align-items: center;
   padding: 16px;
-  border: 1px solid #c4c6c5;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   background: var(--card);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
 }
 
 .item:hover {

@@ -1,6 +1,6 @@
 :host {
-  --bg: #388351;
-  --card: #e2e4e3;
+  --bg: #f5f7fa;
+  --card: #ffffff;
   --text: #171718;
   --muted: #9ca3af;
   --primary: #215732;
@@ -25,7 +25,8 @@ form {
     padding: 32px;
     border-radius: 16px;
     background: var(--card);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+    border: 1px solid #e5e7eb;
 }
 
 h2 {

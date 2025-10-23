@@ -1,6 +1,6 @@
 :host {
-  --bg: #388351;
-  --card: #e2e4e3;
+  --bg: #f5f7fa;
+  --card: #ffffff;
   --text: #171718;
   --muted: #9ca3af;
   --primary: #215732;
@@ -26,7 +26,8 @@
   background: var(--card);
   padding: 1.5rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+  border: 1px solid #e5e7eb;
 }
 
 .header-main {
@@ -65,8 +66,8 @@
   background: var(--card);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+  border: 1px solid #e5e7eb;
 }
 
 .detalhe-form {
@@ -226,12 +227,12 @@
   justify-content: center;
   align-items: center;
   min-height: 50vh;
-  color: white;
+  color: var(--text);
   font-size: 1.1rem;
 }
 
 .estado-mensagem.erro {
-  color: #fef2f2;
+  color: #dc2626;
 }
 
 .detalhe-card.vazio {
@@ -254,7 +255,7 @@
   font-size: 0.95rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  box-shadow: 0 4px 20px rgba(33, 87, 50, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -263,7 +264,7 @@
 .nova-consulta:hover:not(:disabled) {
   transform: translateY(-2px);
   background: #2d7543;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, .4);
+  box-shadow: 0 6px 25px rgba(33, 87, 50, 0.4);
 }
 
 .nova-consulta:disabled {
