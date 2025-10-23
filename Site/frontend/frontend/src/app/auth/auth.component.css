@@ -1,17 +1,35 @@
 :host {
-  --bg: #ffffff;
+  --bg: #388351;
   --card: #e2e4e3;
   --text: #171718;
   --muted: #9ca3af;
   --primary: #215732;
 }
 
+body {
+  margin: 0px;
+}
+
 .auth-screen {
   min-height: 100dvh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
   background: var(--bg);
   color: var(--text);
+}
+
+.logo {
+  font-family: sans-serif;
+  font-size: 10.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: white;
+  margin-bottom: 52px;
+  padding-top: 100px;
+  letter-spacing: 1px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .card {
@@ -19,6 +37,7 @@
   background: var(--card);
   border-radius: 16px;
   padding: 24px;
+  margin-bottom: 30px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
 }
 
