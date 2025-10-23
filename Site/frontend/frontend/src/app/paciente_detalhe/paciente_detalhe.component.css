@@ -1,7 +1,12 @@
 :host {
+  --bg: #388351;
+  --card: #e2e4e3;
+  --text: #171718;
+  --muted: #9ca3af;
+  --primary: #215732;
   display: block;
   padding: 2rem;
-  background: #f5f7fb;
+  background: var(--bg);
   min-height: 100vh;
 }
 
@@ -18,6 +23,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
 }
 
 .header-main {
@@ -28,14 +37,14 @@
 
 .detalhe-header h1 {
   font-size: 2rem;
-  color: #1e2a4a;
+  color: var(--text);
   margin: 0;
 }
 
 .voltar {
   border: none;
   background-color: transparent;
-  color: #4a6cf7;
+  color: var(--primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0.5rem 0;
@@ -43,7 +52,7 @@
 }
 
 .voltar:hover {
-  color: #1e2a4a;
+  color: var(--text);
 }
 
 .detalhe-grid {
@@ -53,11 +62,11 @@
 }
 
 .detalhe-card {
-  background: #ffffff;
+  background: var(--card);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.25);
-  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .detalhe-form {
@@ -83,7 +92,7 @@
 .detalhe-card h2 {
   font-size: 1.25rem;
   margin-bottom: 1rem;
-  color: #1e2a4a;
+  color: var(--text);
 }
 
 .form-grid {
@@ -97,7 +106,7 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.95rem;
-  color: #334155;
+  color: var(--text);
 }
 
 .form-grid span {
@@ -105,21 +114,22 @@
 }
 
 .form-grid input {
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  border: 1px solid #000000;
   padding: 0.65rem 0.75rem;
   font-size: 1rem;
+  background: #ffffff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-grid input:focus {
   outline: none;
-  border-color: #4a6cf7;
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(33, 87, 50, 0.15);
 }
 
 .form-grid input:disabled {
-  background: #f1f5f9;
+  background: #d1d5db;
   color: #475569;
   cursor: default;
 }
@@ -151,7 +161,7 @@
 .secondary,
 .ghost,
 .danger-outline {
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 0.55rem 1.25rem;
   font-weight: 600;
   font-size: 0.95rem;
@@ -161,13 +171,13 @@
 }
 
 .primary {
-  background: #4a6cf7;
+  background: var(--primary);
   color: #fff;
-  border-color: #4a6cf7;
+  border-color: var(--primary);
 }
 
 .primary:hover:not(:disabled) {
-  box-shadow: 0 12px 24px -18px rgba(74, 108, 247, 0.6);
+  background: #2d7543;
   transform: translateY(-1px);
 }
 
@@ -177,13 +187,13 @@
 }
 
 .secondary {
-  background: #e2e8f0;
-  color: #1e293b;
-  border-color: #e2e8f0;
+  background: #6b7280;
+  color: #fff;
+  border-color: #6b7280;
 }
 
 .secondary:hover:not(:disabled) {
-  background: #cbd5f5;
+  background: #4b5563;
 }
 
 .ghost {
@@ -193,7 +203,7 @@
 }
 
 .ghost:hover:not(:disabled) {
-  color: #1e293b;
+  color: var(--text);
 }
 
 .danger-outline {
@@ -216,19 +226,19 @@
   justify-content: center;
   align-items: center;
   min-height: 50vh;
-  color: #1e293b;
+  color: white;
   font-size: 1.1rem;
 }
 
 .estado-mensagem.erro {
-  color: #dc2626;
+  color: #fef2f2;
 }
 
 .detalhe-card.vazio {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  color: #64748b;
+  color: var(--muted);
   text-align: center;
 }
 
@@ -237,23 +247,23 @@
   right: 2.5rem;
   bottom: 2.5rem;
   padding: 0.85rem 1.75rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #4a6cf7, #6366f1);
+  border-radius: 3px;
+  background: var(--primary);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.95rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 22px 45px -20px rgba(74, 108, 247, 0.65);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .nova-consulta:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 26px 55px -22px rgba(79, 70, 229, 0.75);
-  filter: brightness(1.05);
+  transform: translateY(-2px);
+  background: #2d7543;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .4);
 }
 
 .nova-consulta:disabled {
