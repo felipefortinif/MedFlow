@@ -9,11 +9,12 @@ import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { jsPDF } from 'jspdf';
 import { formatLocalDate, formatDate } from '../shared/date.utils';
+import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-gravar-audio',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
   templateUrl: './gravar_audio.component.html',
   styleUrls: ['./gravar_audio.component.css']
 })

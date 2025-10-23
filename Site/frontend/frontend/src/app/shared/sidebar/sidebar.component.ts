@@ -11,7 +11,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 })
 export class SidebarComponent {
   menuItems = [
-    { path: '/pacientes', label: 'Pacientes', icon: '👥' },
+    { path: '/pacientes', label: 'Pacientes', icon: '➔' },
     { path: '/criar-paciente', label: 'Novo Paciente', icon: '✚' },
   ];
 }
