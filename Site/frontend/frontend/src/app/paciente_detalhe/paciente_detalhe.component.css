@@ -59,8 +59,14 @@
 
 .detalhe-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: 1fr 1.2fr;
   gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .detalhe-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .detalhe-card {
@@ -317,11 +323,88 @@
   color: #1f2937;
   line-height: 1.6;
   background: #ffffff;
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: 10px;
   box-shadow: inset 0 0 0 1px rgba(33, 87, 50, 0.1);
-  max-height: 280px;
+  max-height: 500px;
   overflow-y: auto;
+  font-size: 0.95rem;
+}
+
+/* Estilos para markdown renderizado */
+.prontuario-texto ::ng-deep h1,
+.detalhe-texto ::ng-deep h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0369a1;
+  margin: 0.75rem 0 0.5rem 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid rgba(3, 105, 161, 0.2);
+}
+
+.prontuario-texto ::ng-deep h1:first-child,
+.detalhe-texto ::ng-deep h1:first-child {
+  margin-top: 0;
+}
+
+.prontuario-texto ::ng-deep h2,
+.detalhe-texto ::ng-deep h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0369a1;
+  margin: 0.6rem 0 0.4rem 0;
+}
+
+.prontuario-texto ::ng-deep h3,
+.detalhe-texto ::ng-deep h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0.5rem 0 0.3rem 0;
+}
+
+.prontuario-texto ::ng-deep p,
+.detalhe-texto ::ng-deep p {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+  font-size: 0.98rem;
+}
+
+.prontuario-texto ::ng-deep strong,
+.detalhe-texto ::ng-deep strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.prontuario-texto ::ng-deep em,
+.detalhe-texto ::ng-deep em {
+  font-style: italic;
+  color: #334155;
+}
+
+.prontuario-texto ::ng-deep ul,
+.detalhe-texto ::ng-deep ul {
+  margin: 0.3rem 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.prontuario-texto ::ng-deep li,
+.detalhe-texto ::ng-deep li {
+  margin: 0.15rem 0;
+  line-height: 1.5;
+  color: #374151;
+  font-size: 0.96rem;
+}
+
+.prontuario-texto ::ng-deep .spacing,
+.detalhe-texto ::ng-deep .spacing {
+  height: 0.5rem;
+}
+
+.prontuario-texto ::ng-deep br,
+.detalhe-texto ::ng-deep br {
+  display: none;
 }
 
 .prontuario-modal {
@@ -406,6 +489,7 @@
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
+  padding-top: 10px;
   padding-right: 0.5rem;
   min-height: 0;
   max-height: 100%;
@@ -491,7 +575,7 @@
   padding: 1rem 1.25rem;
   line-height: 1.65;
   color: #1f2937;
-  white-space: pre-line;
+  white-space: normal;
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
   max-height: 100%;
 }

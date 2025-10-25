@@ -86,13 +86,8 @@
         </div>
 
         <div *ngIf="!loadingLatestProntuario && latestProntuario" class="prontuario-resumo">
-          <div class="prontuario-resumo-header">
-            <span class="chip">Consultas</span>
-            <span class="chip">Prontuários</span>
-          </div>
-          <div class="prontuario-texto">
-            {{ latestProntuario.prontuarios }}
-          </div>
+
+          <div class="prontuario-texto" [innerHTML]="markdownToHtml(latestProntuario.prontuarios)"></div>
         </div>
 
         <div *ngIf="!loadingLatestProntuario && !latestProntuario && latestProntuarioError" class="estado-card erro">
@@ -138,10 +133,6 @@
                   *ngFor="let prontuario of prontuariosList; trackBy: trackProntuario"
                   (click)="selecionarProntuario(prontuario)" [class.ativo]="prontuario === selectedProntuario">
                   <span class="item-data">{{ formatarDataProntuario(prontuario) }}</span>
-                  <span class="item-preview">
-                    {{ prontuario.prontuarios.length > 120 ? (prontuario.prontuarios | slice:0:120) + '…' :
-                    prontuario.prontuarios }}
-                  </span>
                 </button>
               </aside>
 
@@ -150,9 +141,7 @@
                   <h3>{{ formatarDataProntuario(selectedProntuario) }}</h3>
                   <span class="detalhe-meta">Prontuário completo</span>
                 </header>
-                <div class="detalhe-texto">
-                  {{ selectedProntuario.prontuarios }}
-                </div>
+                <div class="detalhe-texto" [innerHTML]="markdownToHtml(selectedProntuario.prontuarios)"></div>
               </article>
             </div>
             <ng-template #semProntuarios>

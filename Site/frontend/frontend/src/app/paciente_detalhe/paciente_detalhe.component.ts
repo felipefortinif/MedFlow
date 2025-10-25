@@ -3,11 +3,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { ApiService, CreatePatientRequest, PatientDetail, Prontuario } from '../shared/api.service';
 import { StateService } from '../shared/state.service';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 import { formatDate } from '../shared/date.utils';
+import { markdownToHtml as convertMarkdownToHtml } from '../shared/markdown.utils';
 
 @Component({
   selector: 'app-paciente-detalhe',
@@ -46,6 +48,7 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private stateService: StateService,
+    private sanitizer: DomSanitizer,
   ) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
@@ -295,6 +298,14 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
 
   trackProntuario(index: number, prontuario: Prontuario): number {
     return index;
+  }
+
+  /**
+   * Converte markdown para HTML formatado
+   */
+  markdownToHtml(markdown: string): SafeHtml {
+    const html = convertMarkdownToHtml(markdown);
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
   private populateForm(paciente: PatientDetail): void {

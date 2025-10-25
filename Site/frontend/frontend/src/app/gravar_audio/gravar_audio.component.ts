@@ -10,6 +10,7 @@ import { finalize } from 'rxjs/operators';
 import { jsPDF } from 'jspdf';
 import { formatLocalDate, formatDate } from '../shared/date.utils';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
+import { markdownToHtml as convertMarkdownToHtml } from '../shared/markdown.utils';
 
 @Component({
   selector: 'app-gravar-audio',
@@ -437,17 +438,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   private markdownToHtml(md: string): string {
-    let html = md
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/gim, '<b>$1</b>')
-      .replace(/\*(.*?)\*/gim, '<i>$1</i>')
-      .replace(/\n\n/g, '<br/><br/>')
-      .replace(/\n/g, '<br/>');
-
-    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
-    return html;
+    return convertMarkdownToHtml(md);
   }
 
   async generateProntuario() {
