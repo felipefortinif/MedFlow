@@ -38,6 +38,19 @@ export interface PatientDetail extends CreatePatientResponse {
   doctor: number;
 }
 
+export interface Prontuario {
+  doctor: number;
+  patient: number;
+  prontuarios: string;
+  created_at: string;
+}
+
+export interface CreateProntuarioRequest {
+  doctor: number;
+  patient: number;
+  prontuarios: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private baseUrl = 'http://127.0.0.1:8000/';
@@ -75,8 +88,9 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
-  summarizeTranscript(transcript: string, CSRFToken: string, specialty: string = 'medicina_da_dor'): Observable<SummarizeResponse> {
-    const body = { transcript, specialty };
+  summarizeTranscript(transcript: string, CSRFToken: string, specialty?: string): Observable<SummarizeResponse> {
+    const body: Record<string, unknown> = { transcript };
+    if (specialty) body['specialty'] = specialty;
     const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken });
     return this.http.post<SummarizeResponse>(`${this.baseUrl}summerizer/api/summarize/`, body, { headers })
       .pipe(catchError(this.handleError));
@@ -158,6 +172,41 @@ export class ApiService {
 
     return this.http
       .delete<void>(`${this.baseUrl}doctor/patient/`, { headers, params })
+      .pipe(catchError(this.handleError));
+  }
+
+  getLatestProntuario(patientId: number): Observable<Prontuario> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+
+    const params = new HttpParams().set('patient_id', patientId.toString());
+
+    return this.http
+      .get<Prontuario>(`${this.baseUrl}prontuarios/`, { headers, params })
+      .pipe(catchError(this.handleError));
+  }
+
+  getProntuariosList(patientId: number): Observable<Prontuario[]> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+
+    const params = new HttpParams().set('patient_id', patientId.toString());
+
+    return this.http
+      .get<Prontuario[]>(`${this.baseUrl}prontuarios/prontuarios_list/`, { headers, params })
+      .pipe(catchError(this.handleError));
+  }
+
+  createProntuario(payload: CreateProntuarioRequest, csrfToken?: string): Observable<Prontuario> {
+    let headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+    if (csrfToken) headers = headers.set('X-CSRFToken', csrfToken);
+
+    return this.http
+      .post<Prontuario>(`${this.baseUrl}prontuarios/`, payload, { headers })
       .pipe(catchError(this.handleError));
   }
 
