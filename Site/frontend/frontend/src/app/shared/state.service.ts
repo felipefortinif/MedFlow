@@ -1,6 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
 export interface Paciente {
+  id: number | null;
+  doctorId: number | null;
   nome: string;
   cpf: string;
   nascimento: string; // yyyy-mm-dd

@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ApiService, CreatePatientRequest, PatientDetail } from '../shared/api.service';
+import { ApiService, CreatePatientRequest, PatientDetail, Prontuario } from '../shared/api.service';
 import { StateService } from '../shared/state.service';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
+import { formatDate } from '../shared/date.utils';
 
 @Component({
   selector: 'app-paciente-detalhe',
@@ -24,6 +26,14 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
   deleting = false;
   statusMessage = '';
   statusType: 'success' | 'error' | '' = '';
+  loadingLatestProntuario = false;
+  latestProntuario?: Prontuario;
+  latestProntuarioError = '';
+  showProntuariosModal = false;
+  loadingProntuariosList = false;
+  prontuariosList: Prontuario[] = [];
+  prontuariosListError = '';
+  selectedProntuario?: Prontuario;
 
   form: FormGroup;
 
@@ -82,9 +92,10 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
           this.paciente = paciente;
           this.loading = false;
           this.populateForm(paciente);
+          this.fetchLatestProntuario(paciente.id);
           this.cdr.markForCheck();
         },
-        error: (error) => {
+        error: (error: HttpErrorResponse) => {
           if (error.status === 404) {
             this.errorMessage = 'Paciente não encontrado.';
           } else if (error.status === 401) {
@@ -159,7 +170,7 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
           this.statusType = 'success';
           this.cdr.markForCheck();
         },
-        error: (error) => {
+        error: (error: HttpErrorResponse) => {
           this.saving = false;
           if (error.status === 400) {
             this.statusMessage = 'Verifique os dados informados. Alguns campos podem estar inválidos.';
@@ -190,7 +201,7 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
           this.router.navigate(['/pacientes']);
         },
-        error: (error) => {
+        error: (error: HttpErrorResponse) => {
           this.deleting = false;
           if (error.status === 401) {
             this.statusMessage = 'Sua sessão expirou. Faça login novamente.';
@@ -213,16 +224,77 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
 
   iniciarNovaConsulta(): void {
     if (!this.paciente) return;
-    
+
+    const storedDoctorIdRaw = localStorage.getItem('doctor_id');
+    const storedDoctorId = storedDoctorIdRaw ? Number(storedDoctorIdRaw) : NaN;
+    const doctorId = Number.isFinite(this.paciente.doctor)
+      ? this.paciente.doctor
+      : Number.isFinite(storedDoctorId) ? storedDoctorId : null;
+
     // Set patient data in StateService
     this.stateService.setPaciente({
+      id: this.paciente.id,
+      doctorId,
       nome: this.paciente.name,
       cpf: this.paciente.cpf || '',
       nascimento: this.paciente.date_of_birth || ''
     });
-    
+
     // Navigate to recording screen
     this.router.navigate(['/gravar-audio']);
+  }
+
+  mostrarTodosProntuarios(): void {
+    if (!this.paciente) return;
+    this.showProntuariosModal = true;
+    this.loadingProntuariosList = true;
+    this.prontuariosListError = '';
+    this.prontuariosList = [];
+    this.selectedProntuario = undefined;
+    this.cdr.markForCheck();
+
+    this.subscription.add(
+      this.apiService.getProntuariosList(this.paciente.id).subscribe({
+        next: (lista: Prontuario[]) => {
+          this.prontuariosList = [...lista].sort((a, b) => this.getDateValue(b.created_at) - this.getDateValue(a.created_at));
+          this.selectedProntuario = this.prontuariosList[0];
+          this.loadingProntuariosList = false;
+          this.cdr.markForCheck();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loadingProntuariosList = false;
+          if (error.status === 404) {
+            this.prontuariosListError = 'Nenhum prontuário encontrado para este paciente.';
+          } else if (error.status === 401) {
+            this.prontuariosListError = 'Sua sessão expirou. Faça login novamente.';
+          } else {
+            this.prontuariosListError = 'Não foi possível carregar os prontuários. Tente novamente.';
+          }
+          this.cdr.markForCheck();
+        },
+      })
+    );
+  }
+
+  fecharProntuariosModal(): void {
+    this.showProntuariosModal = false;
+    this.cdr.markForCheck();
+  }
+
+  selecionarProntuario(prontuario: Prontuario): void {
+    this.selectedProntuario = prontuario;
+    this.cdr.markForCheck();
+  }
+
+  formatarDataProntuario(prontuario?: Prontuario): string {
+    if (!prontuario) return '';
+    const date = new Date(prontuario.created_at);
+    if (Number.isNaN(date.getTime())) return '';
+    return formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  trackProntuario(index: number, prontuario: Prontuario): number {
+    return index;
   }
 
   private populateForm(paciente: PatientDetail): void {
@@ -239,5 +311,38 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.form.disable({ emitEvent: false });
+  }
+
+  private fetchLatestProntuario(patientId: number): void {
+    this.loadingLatestProntuario = true;
+    this.latestProntuario = undefined;
+    this.latestProntuarioError = '';
+    this.cdr.markForCheck();
+
+    this.subscription.add(
+      this.apiService.getLatestProntuario(patientId).subscribe({
+        next: (prontuario: Prontuario) => {
+          this.latestProntuario = prontuario;
+          this.loadingLatestProntuario = false;
+          this.cdr.markForCheck();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loadingLatestProntuario = false;
+          if (error.status === 404) {
+            this.latestProntuarioError = 'Nenhum prontuário encontrado para este paciente.';
+          } else if (error.status === 401) {
+            this.latestProntuarioError = 'Sua sessão expirou. Faça login novamente.';
+          } else {
+            this.latestProntuarioError = 'Não foi possível carregar o prontuário. Tente novamente mais tarde.';
+          }
+          this.cdr.markForCheck();
+        },
+      })
+    );
+  }
+
+  private getDateValue(dateIso: string): number {
+    const value = new Date(dateIso).getTime();
+    return Number.isNaN(value) ? 0 : value;
   }
 }
