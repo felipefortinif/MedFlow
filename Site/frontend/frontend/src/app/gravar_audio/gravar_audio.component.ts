@@ -8,11 +8,14 @@ import { ApiService } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { jsPDF } from 'jspdf';
+import { formatLocalDate, formatDate } from '../shared/date.utils';
+import { SidebarComponent } from '../shared/sidebar/sidebar.component';
+import { markdownToHtml as convertMarkdownToHtml } from '../shared/markdown.utils';
 
 @Component({
   selector: 'app-gravar-audio',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
   templateUrl: './gravar_audio.component.html',
   styleUrls: ['./gravar_audio.component.css']
 })
@@ -32,6 +35,9 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   recordingDuration = 0;
   copyFeedback = '';
   isEditingProntuario = false;
+  isSavingProntuario = false;
+  hasGeneratedSummary = false;
+  selectedSpecialty = 'medicina_da_dor'; // Default specialty
 
   // Gravação em batches
   private mediaRecorder: MediaRecorder | null = null;
@@ -104,21 +110,12 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   get patientNascimento(): string | null {
-    const nascimento = this.state.paciente()?.nascimento;
-    if (!nascimento) return null;
-    try {
-      return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(nascimento));
-    } catch {
-      return nascimento;
-    }
+    return formatLocalDate(this.state.paciente()?.nascimento);
   }
 
   get sessionStartedLabel(): string | null {
     if (!this.sessionStartedAt) return null;
-    return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(this.sessionStartedAt);
+    return formatDate(this.sessionStartedAt);
   }
 
   get statusChip() {
@@ -155,6 +152,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         this.lastSummaryRaw = '';
         this.lastSummaryMarkdown = '';
         this.copyFeedback = '';
+        this.hasGeneratedSummary = false;
         this.canSummarize = false;
         this.showRecordUI = true;
         this.showGenerate = false;
@@ -440,17 +438,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
   }
 
   private markdownToHtml(md: string): string {
-    let html = md
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/gim, '<b>$1</b>')
-      .replace(/\*(.*?)\*/gim, '<i>$1</i>')
-      .replace(/\n\n/g, '<br/><br/>')
-      .replace(/\n/g, '<br/>');
-
-    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
-    return html;
+    return convertMarkdownToHtml(md);
   }
 
   async generateProntuario() {
@@ -467,15 +455,17 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     this.lastSummaryRaw = '';
     this.lastSummaryMarkdown = '';
     this.copyFeedback = '';
+    this.hasGeneratedSummary = false;
     try {
       const resp = await firstValueFrom(
-        this.api.summarizeTranscript(text, this.getCSRFToken())
+        this.api.summarizeTranscript(text, this.getCSRFToken(), this.selectedSpecialty)
       );
       if (resp?.summary) {
         const html = this.markdownToHtml(resp.summary);
-  this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
-  this.lastSummaryRaw = html;
-  this.lastSummaryMarkdown = resp.summary.trim();
+        this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+        this.lastSummaryRaw = html;
+        this.lastSummaryMarkdown = resp.summary.trim();
+        this.hasGeneratedSummary = true;
         this.status = 'Prontuário gerado.';
       } else {
         this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Nenhum resumo retornado.');
@@ -485,6 +475,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
       this.summaryHtml = this.sanitizer.bypassSecurityTrustHtml('Erro ao gerar prontuário.');
       this.lastSummaryRaw = '';
       this.lastSummaryMarkdown = '';
+      this.hasGeneratedSummary = false;
       this.status = 'Erro ao gerar prontuário.';
     } finally {
       this.isSummarizing = false;
@@ -566,7 +557,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
 
   exportSummary() {
     if (!this.lastSummaryMarkdown && !this.lastSummaryRaw) return;
-    
+
     try {
       // Cria documento PDF em formato A4
       const doc = new jsPDF({
@@ -710,19 +701,19 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
           doc.setFontSize(11);
           const parts = trimmed.split('**');
           let xPos = margin;
-          
+
           for (let i = 0; i < parts.length; i++) {
             if (!parts[i]) continue;
-            
+
             if (i % 2 === 1) {
               doc.setFont('helvetica', 'bold');
             } else {
               doc.setFont('helvetica', 'normal');
             }
-            
+
             const wrappedText = doc.splitTextToSize(parts[i], maxWidth - (xPos - margin));
             doc.text(wrappedText, xPos, yPosition);
-            
+
             if (wrappedText.length > 1) {
               yPosition += (wrappedText.length - 1) * 5;
               xPos = margin;
@@ -769,7 +760,7 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
         .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
       const fileName = `${safePatientName}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
       doc.save(fileName);
-      
+
       this.status = 'Prontuário exportado com sucesso.';
       this.showCopyFeedback('PDF baixado!');
     } catch (error) {
@@ -796,26 +787,92 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
     // Atualiza também o markdown para que o PDF reflita as mudanças
     this.lastSummaryMarkdown = this.htmlToMarkdown(updatedHtml);
     this.isEditingProntuario = false;
+    this.hasGeneratedSummary = !!this.lastSummaryMarkdown;
     this.status = 'Prontuário atualizado.';
     this.showCopyFeedback('Alterações salvas!');
+  }
+
+  async salvarProntuarioNoBackend(): Promise<void> {
+    if (this.isSummarizing || this.isSavingProntuario) return;
+    if (!this.hasGeneratedSummary) {
+      this.status = 'Gere um prontuário antes de salvar.';
+      return;
+    }
+    if (this.isEditingProntuario) {
+      this.status = 'Conclua a edição antes de salvar o prontuário.';
+      this.showCopyFeedback('Finalize a edição');
+      return;
+    }
+
+    const summaryContent = this.lastSummaryMarkdown?.trim() || this.extractPlainText(this.lastSummaryRaw);
+    if (!summaryContent) {
+      this.status = 'Gere um prontuário antes de salvar.';
+      return;
+    }
+
+    const paciente = this.state.paciente();
+    const patientId = paciente?.id ?? null;
+    const doctorIdFromState = paciente?.doctorId ?? null;
+    const doctorIdLocal = localStorage.getItem('doctor_id');
+    const doctorIdFromStorage = doctorIdLocal ? Number(doctorIdLocal) : NaN;
+    const resolvedDoctorId = typeof doctorIdFromState === 'number' && Number.isFinite(doctorIdFromState)
+      ? doctorIdFromState
+      : Number.isFinite(doctorIdFromStorage) ? doctorIdFromStorage : null;
+
+    if (!patientId) {
+      this.status = 'Paciente não identificado para salvar o prontuário.';
+      return;
+    }
+
+    if (!resolvedDoctorId || !Number.isFinite(resolvedDoctorId)) {
+      this.status = 'Médico não identificado. Faça login novamente.';
+      return;
+    }
+
+    this.isSavingProntuario = true;
+    this.status = 'Salvando prontuário...';
+    this.showCopyFeedback('Enviando...');
+
+    try {
+      await firstValueFrom(this.api.createProntuario({
+        doctor: Number(resolvedDoctorId),
+        patient: Number(patientId),
+        prontuarios: summaryContent,
+      }, this.getCSRFToken()));
+      this.status = 'Prontuário salvo com sucesso.';
+      this.showCopyFeedback('Prontuário salvo!');
+    } catch (err) {
+      const statusCode = (err as { status?: number })?.status;
+      if (statusCode === 401) {
+        this.status = 'Sua sessão expirou. Faça login novamente.';
+      } else if (statusCode === 400) {
+        this.status = 'Não foi possível salvar. Verifique o conteúdo e tente novamente.';
+      } else {
+        this.status = 'Erro ao salvar prontuário. Tente novamente.';
+      }
+      this.showCopyFeedback('Falha ao salvar');
+    } finally {
+      this.isSavingProntuario = false;
+      try { this.cdr.detectChanges(); } catch { }
+    }
   }
 
   private htmlToMarkdown(html: string): string {
     if (!html) return '';
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
-    
+
     let markdown = '';
     const processNode = (node: Node): string => {
       if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent || '';
       }
-      
+
       if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         const children = Array.from(element.childNodes).map(processNode).join('');
-        
+
         switch (tagName) {
           case 'h1':
             return `# ${children}\n\n`;
@@ -839,10 +896,10 @@ export class GravarAudioComponent implements OnInit, OnDestroy {
             return children;
         }
       }
-      
+
       return '';
     };
-    
+
     markdown = Array.from(tempDiv.childNodes).map(processNode).join('');
     // Limpa múltiplas quebras de linha consecutivas
     return markdown.replace(/\n{3,}/g, '\n\n').trim();

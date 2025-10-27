@@ -1,3 +1,4 @@
+<app-sidebar></app-sidebar>
 <div class="detalhe-container" *ngIf="!loading; else loadingTemplate">
   <ng-container *ngIf="paciente; else errorTemplate">
     <header class="detalhe-header">
@@ -66,15 +67,92 @@
         </form>
       </article>
 
-      <article class="detalhe-card vazio">
-        <h2>Histórico</h2>
-        <p>Futuramente você verá prognósticos, gravações e resumos deste paciente aqui.</p>
+      <article class="detalhe-card prontuario-card">
+        <div class="card-header">
+          <div class="card-header-text">
+            <h2>Último prontuário</h2>
+            <p class="card-subtitle" *ngIf="latestProntuario && !loadingLatestProntuario">
+              Atualizado em {{ formatarDataProntuario(latestProntuario) }}
+            </p>
+          </div>
+          <button type="button" class="ghost small" (click)="mostrarTodosProntuarios()"
+            [disabled]="loadingLatestProntuario || deleting || saving">
+            Mostrar todos
+          </button>
+        </div>
+
+        <div *ngIf="loadingLatestProntuario" class="estado-card">
+          Carregando último prontuário...
+        </div>
+
+        <div *ngIf="!loadingLatestProntuario && latestProntuario" class="prontuario-resumo">
+
+          <div class="prontuario-texto" [innerHTML]="markdownToHtml(latestProntuario.prontuarios)"></div>
+        </div>
+
+        <div *ngIf="!loadingLatestProntuario && !latestProntuario && latestProntuarioError" class="estado-card erro">
+          {{ latestProntuarioError }}
+        </div>
+
+        <div *ngIf="!loadingLatestProntuario && !latestProntuario && !latestProntuarioError" class="estado-card">
+          Nenhum prontuário encontrado para este paciente até o momento.
+        </div>
       </article>
     </section>
 
-    <button type="button" class="nova-consulta" [routerLink]="['/gravar-audio']" [disabled]="deleting || saving">
+    <button type="button" class="nova-consulta" (click)="iniciarNovaConsulta()" [disabled]="deleting || saving">
       Nova consulta
     </button>
+
+    <div class="prontuario-modal" *ngIf="showProntuariosModal">
+      <div class="modal-backdrop" (click)="fecharProntuariosModal()"></div>
+      <div class="modal-conteudo" role="dialog" aria-modal="true" aria-labelledby="tituloModalProntuarios">
+        <header class="modal-header">
+          <div>
+            <h2 id="tituloModalProntuarios">Prontuários do paciente</h2>
+            <p class="modal-subtitulo" *ngIf="paciente">
+              {{ paciente.name }} · {{ paciente.cpf || 'CPF não informado' }}
+            </p>
+          </div>
+          <button type="button" class="ghost" (click)="fecharProntuariosModal()">Fechar</button>
+        </header>
+
+        <section class="modal-conteudo-principal">
+          <div *ngIf="loadingProntuariosList" class="estado-card">
+            Carregando prontuários...
+          </div>
+
+          <div *ngIf="!loadingProntuariosList && prontuariosListError" class="estado-card erro">
+            {{ prontuariosListError }}
+          </div>
+
+          <div *ngIf="!loadingProntuariosList && !prontuariosListError" class="modal-body-content">
+            <div *ngIf="prontuariosList.length; else semProntuarios" class="prontuarios-layout">
+              <aside class="prontuarios-lista" aria-label="Lista de prontuários">
+                <button type="button" class="prontuario-item"
+                  *ngFor="let prontuario of prontuariosList; trackBy: trackProntuario"
+                  (click)="selecionarProntuario(prontuario)" [class.ativo]="prontuario === selectedProntuario">
+                  <span class="item-data">{{ formatarDataProntuario(prontuario) }}</span>
+                </button>
+              </aside>
+
+              <article class="prontuario-detalhe" *ngIf="selectedProntuario">
+                <header class="detalhe-header">
+                  <h3>{{ formatarDataProntuario(selectedProntuario) }}</h3>
+                  <span class="detalhe-meta">Prontuário completo</span>
+                </header>
+                <div class="detalhe-texto" [innerHTML]="markdownToHtml(selectedProntuario.prontuarios)"></div>
+              </article>
+            </div>
+            <ng-template #semProntuarios>
+              <div class="estado-card">
+                Nenhum prontuário encontrado para este paciente.
+              </div>
+            </ng-template>
+          </div>
+        </section>
+      </div>
+    </div>
   </ng-container>
 </div>
 

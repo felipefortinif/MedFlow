@@ -1,147 +1,138 @@
+<app-sidebar></app-sidebar>
 <div class="page">
   <div class="screen">
-  <div class="topbar">
-    <div class="heading">
-      <nav class="breadcrumbs">
-        <a routerLink="/pacientes">Pacientes</a>
-        <span>/</span>
-        <span>{{ patientName }}</span>
-      </nav>
-      <h1>Paciente: {{ patientName }}</h1>
-      <p class="subhead" *ngIf="patientCpf || patientNascimento">
-        <span *ngIf="patientCpf">CPF: {{ patientCpf }}</span>
-        <span *ngIf="patientCpf && patientNascimento" class="separator">•</span>
-        <span *ngIf="patientNascimento">Nascimento: {{ patientNascimento }}</span>
-      </p>
+    <div class="topbar">
+      <div class="heading">
+        <nav class="breadcrumbs">
+          <a routerLink="/pacientes">Pacientes</a>
+          <span>/</span>
+          <span>{{ patientName }}</span>
+        </nav>
+        <h1>Paciente: {{ patientName }}</h1>
+        <p class="subhead" *ngIf="patientCpf || patientNascimento">
+          <span *ngIf="patientCpf">CPF: {{ patientCpf }}</span>
+          <span *ngIf="patientCpf && patientNascimento" class="separator">•</span>
+          <span *ngIf="patientNascimento">Nascimento: {{ patientNascimento }}</span>
+        </p>
+      </div>
+      <a class="ghost-btn" routerLink="/pacientes">← Voltar ao início</a>
     </div>
-    <a class="ghost-btn" routerLink="/pacientes">← Voltar ao início</a>
-  </div>
 
-  <div class="layout">
-    <aside class="meta-panel">
-      <h2>Detalhes da sessão</h2>
-      <div class="meta-row">
-        <span class="label">Paciente</span>
-        <span class="value">{{ patientName }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="label">Início</span>
-        <span class="value">{{ sessionStartedLabel || '—' }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="label">Status</span>
-        <span class="value">
-          <span class="status-chip" [ngClass]="statusChip.class">
-            <span class="chip-icon">{{ statusChip.icon }}</span>
-            <span class="chip-label">{{ statusChip.label }}</span>
+    <div class="layout">
+      <aside class="meta-panel">
+        <h2>Detalhes da sessão</h2>
+        <div class="meta-row">
+          <span class="label">Paciente</span>
+          <span class="value">{{ patientName }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="label">Início</span>
+          <span class="value">{{ sessionStartedLabel || '—' }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="label">Status</span>
+          <span class="value">
+            <span class="status-chip" [ngClass]="statusChip.class">
+              <span class="chip-icon">{{ statusChip.icon }}</span>
+              <span class="chip-label">{{ statusChip.label }}</span>
+            </span>
           </span>
-        </span>
-      </div>
-      <div class="meta-row mic-selector">
-        <span class="label">🎤 Microfone</span>
-        <div class="mic-control">
-          <select class="mic-dropdown" [(ngModel)]="selectedDeviceId" [disabled]="isRecording">
-            <option value="">Padrão do sistema</option>
-            <option *ngFor="let d of audioInputs" [value]="d.deviceId">{{ d.label || 'Microfone' }}</option>
-          </select>
-          <button type="button" class="refresh-btn" (click)="refreshAudioDevices()" [disabled]="isRecording" title="Atualizar lista de microfones">
-            🔄
-          </button>
         </div>
-      </div>
-      <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
-        ⬇️ Exportar prontuário
-      </button>
-    </aside>
-
-    <section class="record-area">
-      <ng-container *ngIf="showRecordUI">
-        <div class="status-badge" [ngClass]="statusChip.class">
-          <span class="chip-icon">{{ statusChip.icon }}</span>
-          <span class="chip-label">{{ statusChip.label }}</span>
-          <small class="chip-note">{{ status }}</small>
-        </div>
-
-        <div class="voice-visual" [class.recording]="isRecording">
-          <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
-          <div class="voice-icon">🎙️</div>
-        </div>
-
-        <div class="recording-timer" *ngIf="isRecording || recordingDuration > 0">
-          ⏱️ Duração: <span>{{ recordingDurationLabel }}</span>
-        </div>
-
-        <div class="controls">
-          <button class="record-btn primary" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar áudio</button>
-          <button class="record-btn danger" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️ Parar</button>
-        </div>
-      </ng-container>
-
-      <button
-        class="record-btn secondary"
-        *ngIf="showGenerate && !isSummarizing"
-        (click)="generateProntuario()"
-        [disabled]="!canSummarize || isProcessingFinal"
-      >
-        📝 Gerar prontuário
-      </button>
-
-      <section class="summary" *ngIf="summaryHtml || isSummarizing">
-        <div class="summary-header">
-          <h3>Prontuário gerado</h3>
-          <div class="summary-actions">
-            <span class="copy-feedback" *ngIf="copyFeedback">{{ copyFeedback }}</span>
-            <button
-              type="button"
-              class="action-btn"
-              *ngIf="!isSummarizing && summaryHtml && !isEditingProntuario"
-              (click)="toggleEditProntuario()"
-            >
-              ✏️ Editar
-            </button>
-            <button
-              type="button"
-              class="action-btn save"
-              *ngIf="isEditingProntuario"
-              (click)="saveProntuarioEdits()"
-            >
-              💾 Salvar prontuário
-            </button>
-            <button
-              type="button"
-              class="action-btn cancel"
-              *ngIf="isEditingProntuario"
-              (click)="toggleEditProntuario()"
-            >
-              ❌ Cancelar
-            </button>
-            <button
-              type="button"
-              class="copy-btn"
-              (click)="copySummary()"
-              [disabled]="isSummarizing || !canCopySummary || isEditingProntuario"
-            >
-              📋 Copiar prontuário
+        <div class="meta-row mic-selector">
+          <span class="label">🎤 Microfone</span>
+          <div class="mic-control">
+            <select class="mic-dropdown" [(ngModel)]="selectedDeviceId" [disabled]="isRecording">
+              <option value="">Padrão do sistema</option>
+              <option *ngFor="let d of audioInputs" [value]="d.deviceId">{{ d.label || 'Microfone' }}</option>
+            </select>
+            <button type="button" class="refresh-btn" (click)="refreshAudioDevices()" [disabled]="isRecording"
+              title="Atualizar lista de microfones">
+              🔄
             </button>
           </div>
         </div>
-        <div *ngIf="isSummarizing" class="summary-loading">
-          Gerando prontuário
-          <span class="dot dot-1">.</span>
-          <span class="dot dot-2">.</span>
-          <span class="dot dot-3">.</span>
+        <div class="meta-row">
+          <span class="label">📋 Especialidade</span>
+          <select class="specialty-dropdown" [(ngModel)]="selectedSpecialty" [disabled]="isRecording || isSummarizing">
+            <option value="medicina_da_dor">Medicina da Dor</option>
+            <option value="cirurgia">Cirurgia</option>
+          </select>
         </div>
-        <div 
-          *ngIf="!isSummarizing && summaryHtml" 
-          #editableContent
-          class="summary-content" 
-          [class.editing]="isEditingProntuario"
-          [contentEditable]="isEditingProntuario"
-          [innerHTML]="summaryHtml"
-        ></div>
-        <div *ngIf="!isSummarizing && !summaryHtml" class="summary-empty">Nenhum prontuário disponível no momento.</div>
+        <button class="ghost-btn export" (click)="exportSummary()" [disabled]="!lastSummaryRaw">
+          ⬇️ Exportar prontuário
+        </button>
+      </aside>
+
+      <section class="record-area">
+        <ng-container *ngIf="showRecordUI">
+          <div class="status-badge" [ngClass]="statusChip.class">
+            <span class="chip-icon">{{ statusChip.icon }}</span>
+            <span class="chip-label">{{ statusChip.label }}</span>
+            <small class="chip-note">{{ status }}</small>
+          </div>
+
+          <div class="voice-visual" [class.recording]="isRecording">
+            <div class="voice-ring" [ngStyle]="{ transform: 'scale(' + voiceScale + ')' }"></div>
+            <div class="voice-icon">🎙️</div>
+          </div>
+
+          <div class="recording-timer" *ngIf="isRecording || recordingDuration > 0">
+            ⏱️ Duração: <span>{{ recordingDurationLabel }}</span>
+          </div>
+
+          <div class="controls">
+            <button class="record-btn primary" (click)="startRecording()" [disabled]="isRecording">🎤 Gravar
+              áudio</button>
+            <button class="record-btn danger" (click)="stopRecording()" [disabled]="!isRecording || stopRequested">⏹️
+              Parar</button>
+          </div>
+        </ng-container>
+
+        <button class="record-btn secondary" *ngIf="showGenerate && !isSummarizing" (click)="generateProntuario()"
+          [disabled]="!canSummarize || isProcessingFinal">
+          📝 Gerar prontuário
+        </button>
+
+        <section class="summary" *ngIf="summaryHtml || isSummarizing">
+          <div class="summary-header">
+            <h3>Prontuário gerado</h3>
+            <div class="summary-actions">
+              <span class="copy-feedback" *ngIf="copyFeedback">{{ copyFeedback }}</span>
+              <button type="button" class="action-btn" *ngIf="!isSummarizing && summaryHtml && !isEditingProntuario"
+                (click)="toggleEditProntuario()">
+                ✏️ Editar
+              </button>
+              <button type="button" class="action-btn save" *ngIf="isEditingProntuario" (click)="saveProntuarioEdits()">
+                💾 Salvar prontuário
+              </button>
+              <button type="button" class="action-btn cancel" *ngIf="isEditingProntuario"
+                (click)="toggleEditProntuario()">
+                ❌ Cancelar
+              </button>
+              <button type="button" class="action-btn persist" *ngIf="!isSummarizing && summaryHtml"
+                (click)="salvarProntuarioNoBackend()"
+                [disabled]="isSavingProntuario || isProcessingFinal || !canCopySummary || isEditingProntuario">
+                {{ isSavingProntuario ? '💾 Salvando...' : '💾 Salvar no paciente' }}
+              </button>
+              <button type="button" class="copy-btn" (click)="copySummary()"
+                [disabled]="isSummarizing || !canCopySummary || isEditingProntuario">
+                📋 Copiar prontuário
+              </button>
+            </div>
+          </div>
+          <div *ngIf="isSummarizing" class="summary-loading">
+            Gerando prontuário
+            <span class="dot dot-1">.</span>
+            <span class="dot dot-2">.</span>
+            <span class="dot dot-3">.</span>
+          </div>
+          <div *ngIf="!isSummarizing && summaryHtml" #editableContent class="summary-content"
+            [class.editing]="isEditingProntuario" [contentEditable]="isEditingProntuario" [innerHTML]="summaryHtml">
+          </div>
+          <div *ngIf="!isSummarizing && !summaryHtml" class="summary-empty">Nenhum prontuário disponível no momento.
+          </div>
+        </section>
       </section>
-    </section>
-  </div>
+    </div>
   </div>
 </div>

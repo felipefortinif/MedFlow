@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService, Patient } from '../shared/api.service';
+import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 
 interface PacienteItem {
   id: number;
@@ -11,7 +12,7 @@ interface PacienteItem {
 @Component({
   selector: 'app-pacientes',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SidebarComponent],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.css']
 })

@@ -1,0 +1,15 @@
+<aside class="sidebar">
+  <div class="logo">MedFlow</div>
+  
+  <nav class="menu">
+    <a 
+      *ngFor="let item of menuItems" 
+      [routerLink]="item.path" 
+      routerLinkActive="active"
+      class="menu-item"
+    >
+      <span class="icon">{{ item.icon }}</span>
+      <span class="label">{{ item.label }}</span>
+    </a>
+  </nav>
+</aside>
