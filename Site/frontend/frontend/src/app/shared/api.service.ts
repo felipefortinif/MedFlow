@@ -17,6 +17,20 @@ export interface DoctorProfile {
   last_name: string;
   profile?: any;
 }
+export interface UpdateDoctorProfileRequest {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  cpf?: string;
+  date_of_birth?: string;
+  phone?: string;
+  crm?: string;
+  specialty?: number;
+}
+export interface UpdateDoctorProfileResponse {
+  message: string;
+  doctor?: DoctorProfile;
+}
 export interface CreatePatientRequest {
   doctor: number;
   name: string;
@@ -73,6 +87,17 @@ export class ApiService {
     }
     return this.http
       .delete(`${this.baseUrl}doctor/token-auth/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  updateDoctorProfile(data: UpdateDoctorProfileRequest): Observable<UpdateDoctorProfileResponse> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers = headers.set('Authorization', `Token ${token}`);
+    }
+    return this.http
+      .put<UpdateDoctorProfileResponse>(`${this.baseUrl}doctor/account/`, data, { headers })
       .pipe(catchError(this.handleError));
   }
 

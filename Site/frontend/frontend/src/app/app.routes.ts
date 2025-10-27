@@ -5,6 +5,7 @@ import { PacientesComponent } from './pacientes/pacientes.component';
 import { authGuard } from './shared/auth.guard';
 import { CriaPacienteComponent } from './criar_paciente/criar_paciente.component';
 import { PacienteDetalheComponent } from './paciente_detalhe/paciente_detalhe.component';
+import { PerfilComponent } from './perfil/perfil.component';
 
 
 export const routes: Routes = [
@@ -14,5 +15,6 @@ export const routes: Routes = [
 	{ path: 'pacientes/:id', component: PacienteDetalheComponent, canActivate: [authGuard] },
 	{ path: 'criar-paciente', component: CriaPacienteComponent, canActivate: [authGuard] },
 	{ path: 'gravar-audio', component: GravarAudioComponent, canActivate: [authGuard] },
+	{ path: 'perfil', component: PerfilComponent, canActivate: [authGuard] },
 	{ path: '**', redirectTo: 'login' }
 ];
