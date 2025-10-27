@@ -31,6 +31,13 @@ export interface UpdateDoctorProfileResponse {
   message: string;
   doctor?: DoctorProfile;
 }
+
+export interface Specialty {
+  id: number;
+  specialty: string;
+  slug: string;
+}
+
 export interface CreatePatientRequest {
   doctor: number;
   name: string;
@@ -255,6 +262,14 @@ export class ApiService {
     const token = localStorage.getItem('auth_token');
     if (token) headers = headers.set('Authorization', `Token ${token}`);
     return this.http.get<Patient[]>(`${this.baseUrl}doctor/patients_list/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  getSpecialtiesList(): Observable<Specialty[]> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+    return this.http.get<Specialty[]>(`${this.baseUrl}doctor/specialties_list/`, { headers })
       .pipe(catchError(this.handleError));
   }
 }

@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService, DoctorProfile, UpdateDoctorProfileRequest } from '../shared/api.service';
+import { ApiService, DoctorProfile, UpdateDoctorProfileRequest, Specialty } from '../shared/api.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 
@@ -20,6 +20,7 @@ export class PerfilComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   doctorData?: DoctorProfile;
+  specialties: Specialty[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -35,12 +36,26 @@ export class PerfilComponent implements OnInit {
       date_of_birth: ['', Validators.required],
       phone: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
       crm: ['', Validators.required],
-      specialty: ['', Validators.required]
+      specialty: [null, Validators.required]
     });
   }
 
   ngOnInit(): void {
+    this.loadSpecialties();
     this.loadProfile();
+  }
+
+  loadSpecialties(): void {
+    this.apiService.getSpecialtiesList().subscribe({
+      next: (specialties: Specialty[]) => {
+        this.specialties = specialties;
+        this.cdr.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Erro ao carregar especialidades:', error);
+        // Não bloqueia o carregamento do perfil
+      }
+    });
   }
 
   loadProfile(): void {
@@ -60,7 +75,7 @@ export class PerfilComponent implements OnInit {
           date_of_birth: profile.profile?.date_of_birth || '',
           phone: profile.profile?.phone || '',
           crm: profile.profile?.crm || '',
-          specialty: profile.profile?.specialty || ''
+          specialty: (profile.profile?.specialty ?? null)
         });
         
         this.loading = false;

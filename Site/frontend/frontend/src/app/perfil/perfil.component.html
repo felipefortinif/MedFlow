@@ -126,12 +126,16 @@
 
           <div class="form-group">
             <label for="specialty">Especialidade *</label>
-            <input
-              type="number"
+            <select
               id="specialty"
               formControlName="specialty"
-              placeholder="Código da especialidade"
-            />
+              class="specialty-select"
+            >
+              <option [ngValue]="null" disabled>Selecione uma especialidade</option>
+              <option *ngFor="let spec of specialties" [ngValue]="spec.id">
+                {{ spec.specialty }}
+              </option>
+            </select>
             <span class="error" *ngIf="profileForm.get('specialty')?.invalid && profileForm.get('specialty')?.touched">
               Especialidade é obrigatória
             </span>
