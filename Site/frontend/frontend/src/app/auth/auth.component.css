@@ -6,10 +6,6 @@
   --primary: #215732;
 }
 
-body {
-  margin: 0px;
-}
-
 .auth-screen {
   min-height: 100dvh;
   display: flex;
