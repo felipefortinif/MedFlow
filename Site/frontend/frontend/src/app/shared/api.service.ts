@@ -12,7 +12,8 @@ export interface PasswordResetValidateResponse { valid: boolean; message?: strin
 export interface Patient { id: number; name: string; }
 export interface DoctorProfile {
   id: number;
-  username: string;
+  username?: string;
+  email: string;
   first_name: string;
   last_name: string;
   profile?: any;

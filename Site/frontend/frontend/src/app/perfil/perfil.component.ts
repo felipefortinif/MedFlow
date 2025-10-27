@@ -52,18 +52,16 @@ export class PerfilComponent implements OnInit {
         this.doctorData = profile;
         
         // Preenche o formulário com os dados do perfil
-        if (profile.profile) {
-          this.profileForm.patchValue({
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.profile.email || '',
-            cpf: profile.profile.cpf || '',
-            date_of_birth: profile.profile.date_of_birth || '',
-            phone: profile.profile.phone || '',
-            crm: profile.profile.crm || '',
-            specialty: profile.profile.specialty || ''
-          });
-        }
+        this.profileForm.patchValue({
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          email: profile.email || '', // email vem diretamente do user
+          cpf: profile.profile?.cpf || '',
+          date_of_birth: profile.profile?.date_of_birth || '',
+          phone: profile.profile?.phone || '',
+          crm: profile.profile?.crm || '',
+          specialty: profile.profile?.specialty || ''
+        });
         
         this.loading = false;
         this.cdr.markForCheck();
