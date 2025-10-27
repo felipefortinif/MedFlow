@@ -65,6 +65,17 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
+  logout(): Observable<any> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers = headers.set('Authorization', `Token ${token}`);
+    }
+    return this.http
+      .delete(`${this.baseUrl}doctor/token-auth/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
   signup(
     password: string,
     first_name: string,
