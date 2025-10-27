@@ -30,7 +30,7 @@ export class PerfilComponent implements OnInit {
     this.profileForm = this.fb.group({
       first_name: ['', [Validators.required, Validators.minLength(2)]],
       last_name: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
+      email: [{ value: '', disabled: true }], // Email não é editável (PK)
       cpf: ['', [Validators.required, Validators.pattern(/^\d{11}$/)]],
       date_of_birth: ['', Validators.required],
       phone: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
@@ -91,7 +91,16 @@ export class PerfilComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    const formData: UpdateDoctorProfileRequest = this.profileForm.value;
+    // Não envia o email pois é read-only (PK)
+    const formData: UpdateDoctorProfileRequest = {
+      first_name: this.profileForm.get('first_name')?.value,
+      last_name: this.profileForm.get('last_name')?.value,
+      cpf: this.profileForm.get('cpf')?.value,
+      date_of_birth: this.profileForm.get('date_of_birth')?.value,
+      phone: this.profileForm.get('phone')?.value,
+      crm: this.profileForm.get('crm')?.value,
+      specialty: this.profileForm.get('specialty')?.value
+    };
 
     this.apiService.updateDoctorProfile(formData).subscribe({
       next: (response) => {

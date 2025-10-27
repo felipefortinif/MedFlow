@@ -134,6 +134,21 @@ input:disabled {
   cursor: not-allowed;
 }
 
+input.readonly-field,
+input[readonly] {
+  background: #f9fafb;
+  color: var(--muted);
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+.info-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: -0.25rem;
+}
+
 .error {
   font-size: 0.85rem;
   color: var(--error);

@@ -20,7 +20,6 @@ export interface DoctorProfile {
 export interface UpdateDoctorProfileRequest {
   first_name?: string;
   last_name?: string;
-  email?: string;
   cpf?: string;
   date_of_birth?: string;
   phone?: string;

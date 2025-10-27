@@ -351,7 +351,7 @@ class AccountAPI(APIView):
     
     @swagger_auto_schema(
         operation_summary="Update authenticated user's profile",
-        operation_description="Updates the authenticated user's data.",
+        operation_description="Updates the authenticated user's data. Note: email cannot be updated as it is the primary key.",
         manual_parameters=[
             openapi.Parameter(
                 'Authorization', openapi.IN_HEADER, description='Token in format "Token <token>"', type=openapi.TYPE_STRING, required=True
@@ -367,7 +367,6 @@ class AccountAPI(APIView):
                 "phone": openapi.Schema(type=openapi.TYPE_STRING),
                 "crm": openapi.Schema(type=openapi.TYPE_STRING),
                 "specialty": openapi.Schema(type=openapi.TYPE_INTEGER),
-                "email": openapi.Schema(type=openapi.TYPE_STRING, format="email"),
                 "cpf": openapi.Schema(type=openapi.TYPE_STRING),
             },
         ),
@@ -397,11 +396,9 @@ class AccountAPI(APIView):
         user = token_obj.user
 
         if user.is_authenticated:
-            # Update user fields
+            # Update user fields (email is NOT updatable as it's the PK)
             user.first_name = request.data.get('first_name', user.first_name)
             user.last_name = request.data.get('last_name', user.last_name)
-            user.email = request.data.get('email', user.email)
-            user.username = request.data.get('email', user.email)
             user.save()
 
             # Update profile fields if provided

@@ -51,16 +51,16 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="email">Email *</label>
+            <label for="email">Email (não editável)</label>
             <input
               type="email"
               id="email"
               formControlName="email"
               placeholder="seu@email.com"
+              readonly
+              class="readonly-field"
             />
-            <span class="error" *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
-              Email válido é obrigatório
-            </span>
+            <span class="info-text">O email é usado como identificador único e não pode ser alterado</span>
           </div>
 
           <div class="form-group">
