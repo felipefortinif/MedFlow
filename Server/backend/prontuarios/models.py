@@ -12,11 +12,11 @@ class Prontuarios(models.Model):
     class Meta:
         verbose_name = 'Prontuario'
         verbose_name_plural = 'Prontuarios'
-        ordering = ['prontuarios']
+        ordering = ['-created_at']  # Ordena por data de criação (mais recente primeiro)
         indexes = [
             models.Index(fields=['doctor']),
             models.Index(fields=['patient']),
-            models.Index(fields=['prontuarios']),
+            models.Index(fields=['-created_at']),  # Índice para ordenação por data
         ]
         
         
