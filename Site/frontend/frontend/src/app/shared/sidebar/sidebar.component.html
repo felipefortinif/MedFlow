@@ -12,4 +12,16 @@
       <span class="label">{{ item.label }}</span>
     </a>
   </nav>
+
+  <div class="sidebar-footer">
+    <a routerLink="/perfil" routerLinkActive="active" class="settings-btn" title="Configurações">
+      <img src="assets/icons/settings.png" class="icon">
+      <span class="label">Configurações</span>
+    </a>
+    
+    <button class="logout-btn" (click)="logout()" title="Sair">
+      <img src="assets/icons/logout.png" class="icon">
+      <span class="label">Sair</span>
+    </button>
+  </div>
 </aside>

@@ -14,11 +14,15 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
             'crm',
             'specialty',
         ]
-        
-        def to_representation(self, instance):
-            representation = super().to_representation(instance)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Include user's email inside the profile representation for convenience
+        try:
             representation['email'] = instance.user.email
-            return representation
+        except Exception:
+            pass
+        return representation
 
 class PatientsSerializer(serializers.ModelSerializer):
     doctor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())

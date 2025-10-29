@@ -12,11 +12,32 @@ export interface PasswordResetValidateResponse { valid: boolean; message?: strin
 export interface Patient { id: number; name: string; }
 export interface DoctorProfile {
   id: number;
-  username: string;
+  username?: string;
+  email: string;
   first_name: string;
   last_name: string;
   profile?: any;
 }
+export interface UpdateDoctorProfileRequest {
+  first_name?: string;
+  last_name?: string;
+  cpf?: string;
+  date_of_birth?: string;
+  phone?: string;
+  crm?: string;
+  specialty?: number;
+}
+export interface UpdateDoctorProfileResponse {
+  message: string;
+  doctor?: DoctorProfile;
+}
+
+export interface Specialty {
+  id: number;
+  specialty: string;
+  slug: string;
+}
+
 export interface CreatePatientRequest {
   doctor: number;
   name: string;
@@ -62,6 +83,28 @@ export class ApiService {
     const body = { email, password };
     return this.http
       .post<LoginResponse>(`${this.baseUrl}doctor/token-auth/`, body)
+      .pipe(catchError(this.handleError));
+  }
+
+  logout(): Observable<any> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers = headers.set('Authorization', `Token ${token}`);
+    }
+    return this.http
+      .delete(`${this.baseUrl}doctor/token-auth/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  updateDoctorProfile(data: UpdateDoctorProfileRequest): Observable<UpdateDoctorProfileResponse> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers = headers.set('Authorization', `Token ${token}`);
+    }
+    return this.http
+      .put<UpdateDoctorProfileResponse>(`${this.baseUrl}doctor/account/`, data, { headers })
       .pipe(catchError(this.handleError));
   }
 
@@ -219,6 +262,14 @@ export class ApiService {
     const token = localStorage.getItem('auth_token');
     if (token) headers = headers.set('Authorization', `Token ${token}`);
     return this.http.get<Patient[]>(`${this.baseUrl}doctor/patients_list/`, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  getSpecialtiesList(): Observable<Specialty[]> {
+    let headers = new HttpHeaders();
+    const token = localStorage.getItem('auth_token');
+    if (token) headers = headers.set('Authorization', `Token ${token}`);
+    return this.http.get<Specialty[]>(`${this.baseUrl}doctor/specialties_list/`, { headers })
       .pipe(catchError(this.handleError));
   }
 }
