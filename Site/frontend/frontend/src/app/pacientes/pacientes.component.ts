@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService, Patient } from '../shared/api.service';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
@@ -12,12 +13,14 @@ interface PacienteItem {
 @Component({
   selector: 'app-pacientes',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent],
+  imports: [CommonModule, RouterModule, SidebarComponent, FormsModule],
   templateUrl: './pacientes.component.html',
   styleUrls: ['./pacientes.component.css']
 })
 export class PacientesComponent implements OnInit {
   pacientes: PacienteItem[] = [];
+  pacientesFiltrados: PacienteItem[] = [];
+  searchTerm = '';
   loading = false;
   error = '';
 
@@ -36,6 +39,7 @@ export class PacientesComponent implements OnInit {
           id: p.id,
           nome: p.name
         }));
+        this.pacientesFiltrados = [...this.pacientes];
         this.loading = false;
       },
       error: (err) => {
@@ -48,6 +52,24 @@ export class PacientesComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  filtrarPacientes() {
+    const termo = this.searchTerm.toLowerCase().trim();
+    
+    if (!termo) {
+      this.pacientesFiltrados = [...this.pacientes];
+      return;
+    }
+
+    this.pacientesFiltrados = this.pacientes.filter(p =>
+      p.nome.toLowerCase().includes(termo)
+    );
+  }
+
+  limparBusca() {
+    this.searchTerm = '';
+    this.pacientesFiltrados = [...this.pacientes];
   }
 
   adicionarPaciente() {
