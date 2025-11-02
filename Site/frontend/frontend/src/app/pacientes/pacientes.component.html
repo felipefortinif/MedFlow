@@ -5,12 +5,46 @@
     <button class="add-btn" (click)="adicionarPaciente()">+ Adicionar</button>
   </div>
 
+  <!-- Barra de pesquisa -->
+  <div class="search-container" *ngIf="!loading && pacientes.length > 0">
+    <div class="search-box">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input 
+        type="text" 
+        class="search-input"
+        placeholder="Buscar paciente por nome..."
+        [(ngModel)]="searchTerm"
+        (input)="filtrarPacientes()"
+      />
+      <button 
+        *ngIf="searchTerm" 
+        class="clear-btn"
+        (click)="limparBusca()"
+        type="button"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="search-results" *ngIf="searchTerm">
+      {{ pacientesFiltrados.length }} resultado(s) encontrado(s)
+    </div>
+  </div>
+
   <div *ngIf="loading">Carregando...</div>
   <div *ngIf="!loading && error" style="color:#dc2626; margin-bottom:12px;">{{ error }}</div>
   <div *ngIf="!loading && !error && pacientes.length === 0">Nenhum paciente encontrado.</div>
+  
+  <!-- Lista vazia após pesquisa -->
+  <div class="empty-search" *ngIf="!loading && !error && searchTerm && pacientesFiltrados.length === 0">
+    <p>Nenhum paciente encontrado com o termo "{{ searchTerm }}"</p>
+    <button class="secondary-btn" (click)="limparBusca()">Limpar busca</button>
+  </div>
 
-  <div class="list" *ngIf="!loading && !error && pacientes.length > 0">
-    <div class="item" *ngFor="let p of pacientes" (click)="abrirPaciente(p.id)">
+  <div class="list" *ngIf="!loading && !error && pacientesFiltrados.length > 0">
+    <div class="item" *ngFor="let p of pacientesFiltrados" (click)="abrirPaciente(p.id)">
       <div class="avatar">{{ p.nome.charAt(0) }}</div>
       <div class="info">
         <div class="nome">{{ p.nome }}</div>
