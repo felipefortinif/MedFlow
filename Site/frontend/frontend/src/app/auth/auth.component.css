@@ -12,7 +12,9 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  background-image: url("../../assets/icons/background.jpg");
+  background-image: 
+    radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.5) 100%),
+    url("../../assets/icons/background.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -24,7 +26,7 @@
   font-size: 10.5rem;
   font-weight: 700;
   text-align: center;
-  color: var(--bg);
+  color: var(--primary);
   margin-bottom: 52px;
   padding-top: 100px;
   letter-spacing: 1px;
