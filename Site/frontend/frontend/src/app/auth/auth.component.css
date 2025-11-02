@@ -1,5 +1,5 @@
 :host {
-  --bg: #388351;
+  --bg: #3a6b4a;
   --card: #e2e4e3;
   --text: #171718;
   --muted: #9ca3af;
@@ -12,7 +12,10 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  background: var(--bg);
+  background-image: url("../../assets/icons/background.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: var(--text);
 }
 
@@ -21,7 +24,7 @@
   font-size: 10.5rem;
   font-weight: 700;
   text-align: center;
-  color: white;
+  color: var(--bg);
   margin-bottom: 52px;
   padding-top: 100px;
   letter-spacing: 1px;
