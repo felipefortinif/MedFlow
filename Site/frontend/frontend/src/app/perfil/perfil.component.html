@@ -69,11 +69,15 @@
               type="text"
               id="cpf"
               formControlName="cpf"
-              placeholder="12345678900"
-              maxlength="11"
+              placeholder="000.000.000-00"
+              maxlength="14"
+              (keypress)="onlyNumbers($event)"
             />
             <span class="error" *ngIf="profileForm.get('cpf')?.invalid && profileForm.get('cpf')?.touched">
-              CPF deve conter 11 dígitos
+              <ng-container *ngIf="profileForm.get('cpf')?.errors?.['required']">CPF é obrigatório</ng-container>
+              <ng-container *ngIf="profileForm.get('cpf')?.errors?.['cpfInvalid']">
+                {{ profileForm.get('cpf')?.errors?.['cpfInvalid']?.message }}
+              </ng-container>
             </span>
           </div>
         </div>
@@ -85,9 +89,13 @@
               type="date"
               id="date_of_birth"
               formControlName="date_of_birth"
+              [max]="getTodayDate()"
             />
             <span class="error" *ngIf="profileForm.get('date_of_birth')?.invalid && profileForm.get('date_of_birth')?.touched">
-              Data de nascimento é obrigatória
+              <ng-container *ngIf="profileForm.get('date_of_birth')?.errors?.['required']">Data de nascimento é obrigatória</ng-container>
+              <ng-container *ngIf="profileForm.get('date_of_birth')?.errors?.['birthDateInvalid']">
+                {{ profileForm.get('date_of_birth')?.errors?.['birthDateInvalid']?.message }}
+              </ng-container>
             </span>
           </div>
 
@@ -97,11 +105,15 @@
               type="text"
               id="phone"
               formControlName="phone"
-              placeholder="11987654321"
-              maxlength="11"
+              placeholder="(00) 00000-0000"
+              maxlength="15"
+              (keypress)="onlyNumbers($event)"
             />
             <span class="error" *ngIf="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched">
-              Telefone deve conter 10 ou 11 dígitos
+              <ng-container *ngIf="profileForm.get('phone')?.errors?.['required']">Telefone é obrigatório</ng-container>
+              <ng-container *ngIf="profileForm.get('phone')?.errors?.['phoneInvalid']">
+                {{ profileForm.get('phone')?.errors?.['phoneInvalid']?.message }}
+              </ng-container>
             </span>
           </div>
         </div>
@@ -117,10 +129,14 @@
               type="text"
               id="crm"
               formControlName="crm"
-              placeholder="Digite seu CRM"
+              placeholder="Ex: 123456"
+              maxlength="10"
             />
             <span class="error" *ngIf="profileForm.get('crm')?.invalid && profileForm.get('crm')?.touched">
-              CRM é obrigatório
+              <ng-container *ngIf="profileForm.get('crm')?.errors?.['required']">CRM é obrigatório</ng-container>
+              <ng-container *ngIf="profileForm.get('crm')?.errors?.['crmInvalid']">
+                {{ profileForm.get('crm')?.errors?.['crmInvalid']?.message }}
+              </ng-container>
             </span>
           </div>
 

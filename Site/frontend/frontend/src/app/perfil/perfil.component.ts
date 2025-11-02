@@ -5,6 +5,15 @@ import { Router } from '@angular/router';
 import { ApiService, DoctorProfile, UpdateDoctorProfileRequest, Specialty } from '../shared/api.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
+import {
+  cpfValidator,
+  phoneValidator,
+  birthDateValidator,
+  crmValidator,
+  onlyNumbers,
+  formatCPF,
+  formatPhone
+} from '../shared/validators';
 
 @Component({
   selector: 'app-perfil',
@@ -22,6 +31,14 @@ export class PerfilComponent implements OnInit {
   doctorData?: DoctorProfile;
   specialties: Specialty[] = [];
 
+  // Expor funções para o template
+  onlyNumbers = onlyNumbers;
+
+  // Retorna data de hoje no formato YYYY-MM-DD para o atributo max do input date
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
   constructor(
     private fb: FormBuilder,
     private apiService: ApiService,
@@ -29,13 +46,13 @@ export class PerfilComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.profileForm = this.fb.group({
-      first_name: ['', [Validators.required, Validators.minLength(2)]],
-      last_name: ['', [Validators.required, Validators.minLength(2)]],
-      email: [{ value: '', disabled: true }], // Email não é editável (PK)
-      cpf: ['', [Validators.required, Validators.pattern(/^\d{11}$/)]],
-      date_of_birth: ['', Validators.required],
-      phone: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
-      crm: ['', Validators.required],
+      first_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+      last_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+      email: [{ value: '', disabled: true }],
+      cpf: ['', [Validators.required, cpfValidator()]],
+      date_of_birth: ['', [Validators.required, birthDateValidator()]],
+      phone: ['', [Validators.required, phoneValidator()]],
+      crm: ['', [Validators.required, crmValidator()]],
       specialty: [null, Validators.required]
     });
   }
@@ -94,9 +111,31 @@ export class PerfilComponent implements OnInit {
     });
   }
 
+  // Sanitiza CPF: remove formatação, mantém apenas dígitos
+  sanitizeCPF(value: string): string {
+    return value ? value.replace(/\D/g, '') : '';
+  }
+
+  // Sanitiza telefone: remove formatação, mantém apenas dígitos
+  sanitizePhone(value: string): string {
+    return value ? value.replace(/\D/g, '') : '';
+  }
+
   onSubmit(): void {
     if (this.profileForm.invalid) {
-      this.errorMessage = 'Por favor, preencha todos os campos corretamente.';
+      // Mostra primeiro erro encontrado
+      Object.keys(this.profileForm.controls).forEach(key => {
+        const control = this.profileForm.get(key);
+        if (control?.invalid && control.errors) {
+          const firstError = Object.values(control.errors)[0];
+          if (typeof firstError === 'object' && 'message' in firstError) {
+            this.errorMessage = (firstError as any).message;
+          }
+        }
+      });
+      if (!this.errorMessage) {
+        this.errorMessage = 'Por favor, preencha todos os campos corretamente.';
+      }
       return;
     }
 
@@ -104,14 +143,14 @@ export class PerfilComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    // Não envia o email pois é read-only (PK)
+    // Sanitiza campos antes de enviar (remove formatação)
     const formData: UpdateDoctorProfileRequest = {
-      first_name: this.profileForm.get('first_name')?.value,
-      last_name: this.profileForm.get('last_name')?.value,
-      cpf: this.profileForm.get('cpf')?.value,
+      first_name: this.profileForm.get('first_name')?.value?.trim(),
+      last_name: this.profileForm.get('last_name')?.value?.trim(),
+      cpf: this.sanitizeCPF(this.profileForm.get('cpf')?.value),
       date_of_birth: this.profileForm.get('date_of_birth')?.value,
-      phone: this.profileForm.get('phone')?.value,
-      crm: this.profileForm.get('crm')?.value,
+      phone: this.sanitizePhone(this.profileForm.get('phone')?.value),
+      crm: this.profileForm.get('crm')?.value?.trim()?.toUpperCase(),
       specialty: this.profileForm.get('specialty')?.value
     };
 

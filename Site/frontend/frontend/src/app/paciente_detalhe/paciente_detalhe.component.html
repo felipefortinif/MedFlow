@@ -38,30 +38,69 @@
           <div class="form-grid">
             <label>
               <span>Nome completo</span>
-              <input type="text" formControlName="name" placeholder="Nome do paciente" />
-              <small class="erro" *ngIf="campoInvalido('name')">Informe o nome do paciente.</small>
+              <input type="text" formControlName="name" placeholder="Nome do paciente" maxlength="255" />
+              <small class="erro" *ngIf="campoInvalido('name')">
+                <ng-container *ngIf="form.get('name')?.errors?.['required']">Nome é obrigatório.</ng-container>
+                <ng-container *ngIf="form.get('name')?.errors?.['minlength']">Nome deve ter pelo menos 2 caracteres.</ng-container>
+              </small>
             </label>
 
             <label>
               <span>E-mail</span>
-              <input type="email" formControlName="email" placeholder="email@exemplo.com" />
-              <small class="erro" *ngIf="campoInvalido('email')">Informe um e-mail válido.</small>
+              <input type="email" formControlName="email" placeholder="email@exemplo.com" maxlength="254" />
+              <small class="erro" *ngIf="campoInvalido('email')">
+                <ng-container *ngIf="form.get('email')?.errors?.['required']">Email é obrigatório.</ng-container>
+                <ng-container *ngIf="form.get('email')?.errors?.['emailInvalid']">
+                  {{ form.get('email')?.errors?.['emailInvalid']?.message }}
+                </ng-container>
+              </small>
             </label>
 
             <label>
               <span>CPF</span>
-              <input type="text" formControlName="cpf" placeholder="000.000.000-00" />
-              <small class="erro" *ngIf="campoInvalido('cpf')">Informe um CPF válido.</small>
+              <input 
+                type="text" 
+                formControlName="cpf" 
+                placeholder="000.000.000-00" 
+                maxlength="14"
+                (keypress)="onlyNumbers($event)"
+              />
+              <small class="erro" *ngIf="campoInvalido('cpf')">
+                <ng-container *ngIf="form.get('cpf')?.errors?.['required']">CPF é obrigatório.</ng-container>
+                <ng-container *ngIf="form.get('cpf')?.errors?.['cpfInvalid']">
+                  {{ form.get('cpf')?.errors?.['cpfInvalid']?.message }}
+                </ng-container>
+              </small>
             </label>
 
             <label>
               <span>Data de nascimento</span>
-              <input type="date" formControlName="date_of_birth" />
+              <input 
+                type="date" 
+                formControlName="date_of_birth"
+                [max]="getTodayDate()"
+              />
+              <small class="erro" *ngIf="campoInvalido('date_of_birth')">
+                <ng-container *ngIf="form.get('date_of_birth')?.errors?.['birthDateInvalid']">
+                  {{ form.get('date_of_birth')?.errors?.['birthDateInvalid']?.message }}
+                </ng-container>
+              </small>
             </label>
 
             <label>
               <span>Telefone</span>
-              <input type="text" formControlName="phone" placeholder="(00) 00000-0000" />
+              <input 
+                type="text" 
+                formControlName="phone" 
+                placeholder="(00) 00000-0000"
+                maxlength="15"
+                (keypress)="onlyNumbers($event)"
+              />
+              <small class="erro" *ngIf="campoInvalido('phone')">
+                <ng-container *ngIf="form.get('phone')?.errors?.['phoneInvalid']">
+                  {{ form.get('phone')?.errors?.['phoneInvalid']?.message }}
+                </ng-container>
+              </small>
             </label>
           </div>
         </form>

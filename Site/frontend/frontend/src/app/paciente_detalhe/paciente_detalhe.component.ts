@@ -10,6 +10,13 @@ import { StateService } from '../shared/state.service';
 import { SidebarComponent } from '../shared/sidebar/sidebar.component';
 import { formatDate } from '../shared/date.utils';
 import { markdownToHtml as convertMarkdownToHtml } from '../shared/markdown.utils';
+import {
+  cpfValidator,
+  phoneValidator,
+  patientBirthDateValidator,
+  emailValidator,
+  onlyNumbers
+} from '../shared/validators';
 
 @Component({
   selector: 'app-paciente-detalhe',
@@ -41,6 +48,13 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
 
   private subscription = new Subscription();
 
+  // Expor funções para o template
+  onlyNumbers = onlyNumbers;
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
   constructor(
     private route: ActivatedRoute,
     private apiService: ApiService,
@@ -51,11 +65,11 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
   ) {
     this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(255)]],
-      email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
-      cpf: ['', [Validators.required, Validators.maxLength(20)]],
-      date_of_birth: [''],
-      phone: ['', [Validators.maxLength(20)]],
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
+      email: ['', [Validators.required, emailValidator(), Validators.maxLength(254)]],
+      cpf: ['', [Validators.required, cpfValidator()]],
+      date_of_birth: ['', [patientBirthDateValidator()]],
+      phone: ['', [phoneValidator()]],
     });
     this.form.disable({ emitEvent: false });
   }
@@ -136,6 +150,24 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
   salvarEdicao(): void {
     if (!this.paciente || this.form.invalid) {
       this.form.markAllAsTouched();
+      
+      // Mostra primeiro erro encontrado
+      Object.keys(this.form.controls).forEach(key => {
+        const control = this.form.get(key);
+        if (control?.invalid && control.errors) {
+          const firstError = Object.values(control.errors)[0];
+          if (typeof firstError === 'object' && 'message' in firstError) {
+            this.statusMessage = (firstError as any).message;
+            this.statusType = 'error';
+          }
+        }
+      });
+      
+      if (!this.statusMessage) {
+        this.statusMessage = 'Por favor, preencha todos os campos corretamente.';
+        this.statusType = 'error';
+      }
+      
       this.cdr.markForCheck();
       return;
     }
@@ -148,13 +180,14 @@ export class PacienteDetalheComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Sanitiza dados antes de enviar
     const payload: CreatePatientRequest = {
       doctor: doctorId,
-      name: this.form.value.name,
-      email: this.form.value.email,
-      cpf: this.form.value.cpf,
+      name: this.form.value.name?.trim(),
+      email: this.form.value.email?.trim().toLowerCase(),
+      cpf: this.form.value.cpf?.replace(/\D/g, ''), // Remove formatação
       date_of_birth: this.form.value.date_of_birth || '',
-      phone: this.form.value.phone || '',
+      phone: this.form.value.phone?.replace(/\D/g, '') || '', // Remove formatação
     };
 
     this.saving = true;

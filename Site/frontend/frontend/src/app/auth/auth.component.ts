@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { ApiService, DoctorProfile, LoginResponse } from '../shared/api.service';
 import { firstValueFrom } from 'rxjs';
+import { onlyNumbers } from '../shared/validators';
 
 @Component({
   selector: 'app-auth',
@@ -48,12 +49,99 @@ export class AuthComponent {
 
   private returnUrl: string | null = null;
 
+  // Expor função para template
+  onlyNumbers = onlyNumbers;
+
   constructor(private router: Router, private route: ActivatedRoute, private api: ApiService) {
     // capture returnUrl if present
     this.route.queryParamMap.subscribe(q => {
       const r = q.get('returnUrl');
       this.returnUrl = r && r !== '/login' ? r : null;
     });
+  }
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // Validação de CPF
+  validateCPF(cpf: string): boolean {
+    const cleaned = cpf.replace(/\D/g, '');
+    if (cleaned.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cleaned)) return false;
+
+    let sum = 0;
+    for (let i = 1; i <= 9; i++) {
+      sum += parseInt(cleaned.substring(i - 1, i)) * (11 - i);
+    }
+    let remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleaned.substring(9, 10))) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++) {
+      sum += parseInt(cleaned.substring(i - 1, i)) * (12 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleaned.substring(10, 11))) return false;
+
+    return true;
+  }
+
+  // Validação de email
+  validateEmail(email: string): boolean {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
+  }
+
+  // Validação de telefone
+  validatePhone(phone: string): boolean {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length >= 10 && cleaned.length <= 11 && cleaned[0] !== '0';
+  }
+
+  // Validação de data de nascimento
+  validateBirthDate(date: string): { valid: boolean; message?: string } {
+    if (!date) return { valid: false, message: 'Data obrigatória' };
+    
+    const birthDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (birthDate > today) {
+      return { valid: false, message: 'Data não pode estar no futuro' };
+    }
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      return { valid: false, message: 'Idade mínima: 18 anos' };
+    }
+
+    if (age > 120) {
+      return { valid: false, message: 'Data inválida' };
+    }
+
+    return { valid: true };
+  }
+
+  // Validação de senha
+  validatePassword(password: string): { valid: boolean; message?: string } {
+    if (password.length < 8) {
+      return { valid: false, message: 'Senha deve ter no mínimo 8 caracteres' };
+    }
+    if (!/[a-zA-Z]/.test(password)) {
+      return { valid: false, message: 'Senha deve conter pelo menos uma letra' };
+    }
+    if (!/\d/.test(password)) {
+      return { valid: false, message: 'Senha deve conter pelo menos um número' };
+    }
+    return { valid: true };
   }
 
   switch(mode: 'login' | 'signup' | 'forgot') {
@@ -117,30 +205,81 @@ export class AuthComponent {
     this.isLoading = true;
     this.error = '';
 
-    if (this.signupPassword !== this.signupPasswordConfirm) {
-      this.error = 'As senhas não coincidem.';
+    // Validações de campos obrigatórios
+    if (!this.signupFirstName?.trim()) {
+      this.error = 'Nome é obrigatório';
       this.isLoading = false;
       return;
     }
 
-    // Validar obrigatórios conforme backend: email, password, cpf, crm, specialty
-    if (!this.signupEmail || !this.signupPassword || !this.signupPasswordConfirm || !this.signupCpf || !this.signupCrm || this.signupSpecialty === null) {
-      this.error = 'Preencha todos os campos obrigatórios.';
+    if (!this.signupLastName?.trim()) {
+      this.error = 'Sobrenome é obrigatório';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.signupEmail || !this.validateEmail(this.signupEmail)) {
+      this.error = 'Email inválido';
+      this.isLoading = false;
+      return;
+    }
+
+    const passwordValidation = this.validatePassword(this.signupPassword);
+    if (!passwordValidation.valid) {
+      this.error = passwordValidation.message || 'Senha inválida';
+      this.isLoading = false;
+      return;
+    }
+
+    if (this.signupPassword !== this.signupPasswordConfirm) {
+      this.error = 'As senhas não coincidem';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.signupCpf || !this.validateCPF(this.signupCpf)) {
+      this.error = 'CPF inválido';
+      this.isLoading = false;
+      return;
+    }
+
+    const birthDateValidation = this.validateBirthDate(this.signupDateOfBirth);
+    if (!birthDateValidation.valid) {
+      this.error = birthDateValidation.message || 'Data de nascimento inválida';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.signupPhone || !this.validatePhone(this.signupPhone)) {
+      this.error = 'Telefone inválido (deve ter 10 ou 11 dígitos)';
+      this.isLoading = false;
+      return;
+    }
+
+    if (!this.signupCrm?.trim() || this.signupCrm.trim().length < 4) {
+      this.error = 'CRM inválido (mínimo 4 caracteres)';
+      this.isLoading = false;
+      return;
+    }
+
+    if (this.signupSpecialty === null) {
+      this.error = 'Selecione uma especialidade';
       this.isLoading = false;
       return;
     }
 
     try {
+      // Sanitiza campos antes de enviar
       const resp = await firstValueFrom(
         this.api.signup(
           this.signupPassword,
-          this.signupFirstName,
-          this.signupLastName,
-          this.signupEmail,
-          this.signupCpf,
+          this.signupFirstName.trim(),
+          this.signupLastName.trim(),
+          this.signupEmail.trim().toLowerCase(),
+          this.signupCpf.replace(/\D/g, ''), // Remove formatação
           this.signupDateOfBirth,
-          this.signupPhone,
-          this.signupCrm,
+          this.signupPhone.replace(/\D/g, ''), // Remove formatação
+          this.signupCrm.trim().toUpperCase(),
           this.signupSpecialty ?? 0
         )
       );
